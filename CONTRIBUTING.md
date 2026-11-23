@@ -7,7 +7,7 @@ Thanks for helping shopkeepers keep their books by voice. Everything here is MIT
 ```bash
 npm install
 npm run dev        # demo mode: no keys needed, data stays in the browser
-npm test           # 160+ tests, ~2 s, no network
+npm test           # 210+ tests, ~2 s, no network
 ```
 
 Server features (phone login, sync, Whisper large-v3, the LLM) need Supabase and an

@@ -6,6 +6,7 @@ import { useStore, useLedger, addEntry, updateEntry, removeEntry, updateCustomer
 import { historyWithRunningBalance } from '../lib/ledger.js';
 import { reminderLink } from '../lib/whatsapp.js';
 import { PACKS } from '../i18n/index.js';
+import { NameVoiceRow } from '../components/VoiceClip.jsx';
 
 export default function CustomerDetail({ id, go }) {
   const s = useStore();
@@ -74,6 +75,8 @@ export default function CustomerDetail({ id, go }) {
           ))}
         </div>
       )}
+
+      <NameVoiceRow customer={c} />
 
       <Button variant="secondary" className="w-full" onClick={() => go(`#/statement/${id}`)}>
         📄 {t('statement')} · {en('statement')}

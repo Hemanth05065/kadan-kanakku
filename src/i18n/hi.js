@@ -54,6 +54,12 @@ const hi = {
     english: 'English',
     hindi: 'हिन्दी',
     telugu: 'తెలుగు',
+    shop_voice: 'दुकान की आवाज़',
+    name_voice: 'नाम आपकी आवाज़ में',
+    names: 'नाम',
+    hands_free: 'बिना दबाए बोलिए',
+    hf_listening: 'सुन रहा हूँ, बस बोलिए',
+    hf_tap_stop: 'रोकने के लिए छुएँ',
   },
 
   replies: {

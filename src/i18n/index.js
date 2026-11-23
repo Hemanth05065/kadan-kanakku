@@ -19,11 +19,35 @@ export function t(key, lang = DEFAULT_LANG) {
   return pack(lang).labels[key] ?? PACKS.en.labels[key] ?? key;
 }
 
-/** Spoken + shown reply text in a language (falls back to English). */
+// A reply may have several wordings (an array): a person doesn't say "Seri, cancel pannitten"
+// the same way every time. They take turns, starting with the first, so the first wording
+// of every reply is the one the spec and the tests describe.
+let variety = true;
+const turns = new Map();
+/** Turn wording variety off (tests) or on. */
+export function setReplyVariety(on) {
+  variety = Boolean(on);
+  turns.clear();
+}
+
+/**
+ * Spoken + shown reply text in a language (falls back to English).
+ * Returns { key, lang, variant, params, show, say }; `params` lets the recorded shop voice
+ * rebuild the sentence from clips (raw amounts, name keys).
+ */
 export function reply(key, lang, params = {}) {
   const code = PACKS[lang] ? lang : DEFAULT_LANG;
-  const fn = PACKS[code].replies[key] || PACKS.en.replies[key];
-  return { key, lang: PACKS[code].replies[key] ? code : 'en', ...fn(params) };
+  const own = PACKS[code].replies[key];
+  const entry = own || PACKS.en.replies[key];
+  const fns = Array.isArray(entry) ? entry : [entry];
+  let variant = 0;
+  if (variety && fns.length > 1) {
+    const id = `${own ? code : 'en'}:${key}`;
+    const n = turns.get(id) || 0;
+    turns.set(id, n + 1);
+    variant = n % fns.length;
+  }
+  return { key, lang: own ? code : 'en', variant, params, ...fns[variant](params) };
 }
 
 // ── Parser vocabulary, indexed by sound skeleton ─────────────────────────────

@@ -16,6 +16,7 @@ import { balanceOf, balances, todayStats, totalPending } from '../lib/ledger.js'
 import { fmt, sayNum } from '../lib/util.js';
 import { skeleton } from '../lib/translit.js';
 import { tokenize } from '../lib/numbers.js';
+import { nameKeyOf } from './voicePack.js';
 
 export const EMPTY_CONVO = Object.freeze({ awaiting: null, pending: null, failures: 0 });
 
@@ -99,7 +100,7 @@ export function evaluate(p, convo, ctx) {
       const [a, b] = res.candidates;
       return ask(
         'ask_which',
-        { a: label(a), aSay: sayName(a, lang), b: label(b), bSay: sayName(b, lang) },
+        { a: label(a), aSay: sayName(a, lang), aKey: nameKeyOf(a), b: label(b), bSay: sayName(b, lang), bKey: nameKeyOf(b) },
         'choice',
         { ...p, candidates: [a.id, b.id] },
         convo,
@@ -109,7 +110,7 @@ export function evaluate(p, convo, ctx) {
       const [a] = res.candidates;
       return ask(
         'ask_is_it',
-        { a: label(a), aSay: sayName(a, lang) },
+        { a: label(a), aSay: sayName(a, lang), aKey: nameKeyOf(a) },
         'choice',
         { ...p, candidates: [a.id] },
         convo,
@@ -125,11 +126,11 @@ export function evaluate(p, convo, ctx) {
   const c = ctx.customers.find((x) => x.id === p.customer_id);
   if (!c) return answer('try_again', lang);
   const bal = balanceOf(ctx.entries, c.id);
-  const who = { name: label(c), nameSay: sayName(c, lang) };
+  const who = { name: label(c), nameSay: sayName(c, lang), nameKey: nameKeyOf(c) };
 
   if (p.intent === 'query_balance') {
     const key = bal > 0 ? 'balance' : bal < 0 ? 'advance' : 'balance_zero';
-    return answer(key, lang, { ...who, total: fmt(Math.abs(bal)), totalSay: sayNum(Math.abs(bal)) }, { customerId: c.id });
+    return answer(key, lang, { ...who, total: fmt(Math.abs(bal)), totalSay: sayNum(Math.abs(bal)), totalN: Math.abs(bal) }, { customerId: c.id });
   }
   if (p.intent === 'add_customer') return answer('customer_exists', lang, who, { customerId: c.id });
 
@@ -137,7 +138,7 @@ export function evaluate(p, convo, ctx) {
 
   const amount = Number(p.amount);
   const total = bal + (p.intent === 'credit' ? amount : -amount);
-  const params = { ...who, amt: fmt(amount), amtSay: sayNum(amount), total: fmt(total), totalSay: sayNum(total) };
+  const params = { ...who, amt: fmt(amount), amtSay: sayNum(amount), amtN: amount, total: fmt(total), totalSay: sayNum(total), totalN: total };
   const unsure = (p.confidence ?? 0) < LIMITS.CONFIDENCE_OK && !p.clarified;
   if (!p.confirmed && (amount > LIMITS.LARGE_AMOUNT || unsure)) {
     return ask('confirm_amount', params, 'confirm', p, convo, YES_NO);
@@ -155,10 +156,10 @@ export function evaluate(p, convo, ctx) {
 /** After the owner agreed to add a new customer. */
 export function afterCustomerAdded(p, customer, ctx) {
   const lang = p.lang;
-  const added = r('customer_added', lang, { name: label(customer), nameSay: sayName(customer, lang) });
+  const added = r('customer_added', lang, { name: label(customer), nameSay: sayName(customer, lang), nameKey: nameKeyOf(customer) });
   if (!['credit', 'payment', 'query_balance'].includes(p.intent)) return { kind: 'answer', reply: added, convo: { ...EMPTY_CONVO } };
   const next = evaluate({ ...p, customer_id: customer.id, clarified: true }, EMPTY_CONVO, ctx);
-  return { ...next, reply: { ...next.reply, show: `${added.show} ${next.reply.show}`, say: `${added.say} ${next.reply.say}` } };
+  return { ...next, reply: { ...next.reply, show: `${added.show} ${next.reply.show}`, say: `${added.say} ${next.reply.say}`, chain: [added, next.reply] } };
 }
 
 export function fail(convo, lang, reason, parse = null) {
@@ -194,6 +195,7 @@ function topAnswer(ctx, lang) {
   return answer('top', lang, {
     list: top.map((c) => `${label(c)} ${fmt(bal.get(c.id))}`).join(', '),
     listSay: top.map((c) => `${sayName(c, lang)} ${sayNum(bal.get(c.id))}`).join(', '),
+    items: top.map((c) => ({ nameKey: nameKeyOf(c), n: bal.get(c.id) })),
   });
 }
 
@@ -205,6 +207,7 @@ export function todayAnswer(ctx, lang) {
     credit: fmt(s.credit), creditSay: sayNum(s.credit),
     payment: fmt(s.payment), paymentSay: sayNum(s.payment),
     total: fmt(total), totalSay: sayNum(total),
+    creditN: s.credit, paymentN: s.payment, totalN: total,
   });
 }
 
@@ -339,7 +342,7 @@ export function decide(parse, convo, ctx) {
       if (!p.customer_name) return ask('ask_who', {}, 'customer', p, base);
       const res = resolveName(p.customer_name, ctx.index);
       if (res.status === 'match' && res.score >= 0.97) {
-        return answer('customer_exists', lang, { name: label(res.customer), nameSay: sayName(res.customer, lang) });
+        return answer('customer_exists', lang, { name: label(res.customer), nameSay: sayName(res.customer, lang), nameKey: nameKeyOf(res.customer) });
       }
       const params = { name: spokenShow(p.customer_name), nameSay: spokenSay(p.customer_name, lang) };
       return ask('ask_new_customer', params, 'new_customer', p, base, YES_NO);

@@ -7,6 +7,7 @@ import { initStore, getState, subscribe } from './lib/store.js';
 import { startSync } from './lib/sync.js';
 import { loadDeviceModel } from './voice/localWhisper.js';
 import { reprocessReviews } from './voice/reprocess.js';
+import { loadVoiceClips } from './voice/voiceClips.js';
 import { CLOUD } from './lib/config.js';
 import { initAuth } from './lib/auth.js';
 
@@ -20,6 +21,7 @@ createRoot(document.getElementById('root')).render(
 
 (async () => {
   await initStore();
+  loadVoiceClips();
   if (CLOUD) await initAuth().catch((err) => console.warn('auth init failed', err));
   startSync();
 
