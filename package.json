@@ -9,7 +9,10 @@
     "build": "vite build",
     "preview": "vite preview --host",
     "test": "vitest run",
-    "icons": "node scripts/make-icons.mjs"
+    "icons": "node scripts/make-icons.mjs",
+    "eval:nlu": "node scripts/eval-nlu.mjs",
+    "eval:stt": "node scripts/eval-stt.mjs",
+    "check:functions": "deno check --config supabase/functions/deno.json supabase/functions/transcribe/index.ts supabase/functions/understand/index.ts supabase/functions/speak/index.ts"
   },
   "dependencies": {
     "@huggingface/transformers": "^4.3.2",
@@ -22,9 +25,18 @@
     "@electric-sql/pglite": "^0.5.17",
     "@tailwindcss/vite": "^4.3.5",
     "@vitejs/plugin-react": "^6.3.0",
+    "fake-indexeddb": "^6.2.8",
     "tailwindcss": "^4.3.5",
     "vite": "^8.3.8",
     "vite-plugin-pwa": "^2.0.0",
     "vitest": "^5.1.1"
+  },
+  "engines": {
+    "node": ">=22.18"
+  },
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/Hemanth05065/kadan-kanakku.git"
   }
 }
