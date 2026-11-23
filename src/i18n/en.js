@@ -199,6 +199,8 @@ const en = {
       'at', 'it', 'that', 'this', 'me', 'my', 'last', 'entry', 'name', 'shop', 'kadai', 'amount', 'what', 'tell',
       'also', 'more', 'only', 'just', 'entries', 'bill', 'money', 'cash', 'him', 'them', 'their', 'back',
     ],
+    // Sounds, not words: never a customer name, and no vote on the language.
+    interjection: ['hmm', 'hm', 'umm', 'mmm', 'uh', 'er', 'aah', 'ahh', 'ooh'],
     items: [
       'rice', 'oil', 'sugar', 'dal', 'milk', 'soap', 'biscuit', 'biscuits', 'atta', 'flour', 'rava', 'tea', 'coffee',
       'powder', 'salt', 'egg', 'eggs', 'bread', 'onion', 'onions', 'tomato', 'tomatoes', 'chilli', 'ghee', 'maida',

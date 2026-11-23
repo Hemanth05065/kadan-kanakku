@@ -199,14 +199,16 @@ const ta = {
   lexicon: {
     credit: [
       'kadan', 'kadanu', 'kadana', 'kadanla', 'kadanaa', 'eluthu', 'ezhuthu', 'eludhu', 'ezhudhu', 'eluthikko',
-      'ezhuthikko', 'potturu', 'pottuko', 'pottukko', 'podu', 'kanakku', 'kanakkula', 'vaanginaar', 'vaangunaar',
+      'ezhuthikko', 'eluthunga', 'ezhuthunga', 'eludhunga', 'podunga', 'pottukonga', 'potturu', 'pottuko', 'pottukko', 'podu', 'kanakku', 'kanakkula', 'vaanginaar', 'vaangunaar',
       'vaanginanga', 'eduthaar', 'eduthanga',
       'கடன்', 'கடனா', 'கடனு', 'எழுது', 'போட்டுக்கோ', 'போடு', 'கணக்கு', 'கணக்குல', 'வாங்கினார்',
     ],
     payment: [
       'kuduthaar', 'kuduthar', 'kuduthanga', 'kuduthaanga', 'kuduthan', 'kuduthaa', 'koduthaar', 'koduthar',
       'koduthanga', 'kuduthirukkaar', 'kattinaar', 'kattinar', 'kattinanga', 'kattunaar', 'kattitaar', 'varavu',
-      'jama', 'thiruppi', 'thirupi', 'settle',
+      'jama', 'thiruppi', 'thirupi', 'settle', 'thandhaanga', 'thanthaanga', 'thandhanga', 'thanthanga', 'thandhaar',
+      'thanthaar', 'kuduthuttaanga', 'koduthuttaanga', 'vaanginen', 'vaangitten', 'vaangikitten', 'vandhuchu', 'vanthuchu',
+      'தந்தாங்க', 'தந்தார்', 'வாங்கினேன்', 'வந்துச்சு',
       'குடுத்தார்', 'கொடுத்தார்', 'குடுத்தாங்க', 'கொடுத்தாங்க', 'கட்டினார்', 'கட்டினாங்க', 'வரவு', 'ஜமா',
     ],
     query: [

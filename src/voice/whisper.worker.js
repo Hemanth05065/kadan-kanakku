@@ -45,6 +45,7 @@ self.onmessage = async ({ data }) => {
         language: LANGUAGE[data.language] || 'tamil',
         task: 'transcribe',
         return_timestamps: false,
+        max_new_tokens: 64, // a counter command is a few words; stops runaway hallucinations early
       });
       self.postMessage({ type: 'result', id: data.id, text: String(out?.text || '').trim(), ms: Math.round(performance.now() - t0) });
     }

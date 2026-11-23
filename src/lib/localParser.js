@@ -9,7 +9,7 @@ import { LEXICON, ITEM_DISPLAY, LANGS, NUMBER_EXACT } from '../i18n/index.js';
 const NAME_STOP = /^\d/;
 
 // Command words say more about the language than fillers or item names do.
-const CATEGORY_WEIGHT = { credit: 2, payment: 2, query: 2, top: 2, today: 2, undo: 2, add: 1.5, yes: 1.5, no: 1.5, honorific: 1, rupee: 1 };
+const CATEGORY_WEIGHT = { credit: 2, payment: 2, query: 2, top: 2, today: 2, undo: 2, add: 1.5, yes: 1.5, no: 1.5, honorific: 1, rupee: 1, interjection: 0 };
 
 /** Which language an utterance is in: its script, then its words (shared words split their vote). */
 export function detectLanguage(text, tokens, defaultLang = 'ta') {
@@ -19,8 +19,8 @@ export function detectLanguage(text, tokens, defaultLang = 'ta') {
   for (const t of tokens) {
     const e = LEXICON.get(t.sk);
     if (e) {
-      const w = Math.max(0.5, ...[...e.categories].map((c) => CATEGORY_WEIGHT[c] || 0.5));
-      for (const l of e.langs) hits[l] += w / e.langs.size;
+      const w = Math.max(...[...e.categories].map((c) => CATEGORY_WEIGHT[c] ?? 0.5));
+      if (w > 0) for (const l of e.langs) hits[l] += w / e.langs.size;
     }
     const numLangs = LANGS.filter((l) => NUMBER_EXACT[l].has(t.latin));
     for (const l of numLangs) hits[l] += 1 / numLangs.length;

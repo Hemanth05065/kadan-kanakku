@@ -39,7 +39,33 @@ export function engines() {
   };
 }
 
-export async function transcribe({ wav, archive, pcm, live }) {
+/**
+ * Whisper hallucinates on noise or silence ("thanks for watching", the same word fifty times).
+ * A counter command is a few words; anything that loops or runs far longer than the audio
+ * could hold is treated as "didn't hear you" rather than understood.
+ */
+export function looksHallucinated(text, durationMs = null) {
+  const words = String(text || '').trim().split(/\s+/).filter(Boolean);
+  if (!words.length) return false;
+  let run = 1;
+  for (let i = 1; i < words.length; i++) {
+    run = words[i] === words[i - 1] ? run + 1 : 1;
+    if (run >= 4) return true;
+  }
+  const distinct = new Set(words).size;
+  if (words.length >= 8 && distinct / words.length < 0.35) return true;
+  if (durationMs && words.length > Math.max(12, (durationMs / 1000) * 6)) return true;
+  return false;
+}
+
+const clean = (out, durationMs) => (out && looksHallucinated(out.text, durationMs) ? { ...out, text: '', hallucinated: true } : out);
+
+export async function transcribe(input) {
+  const durationMs = input.pcm?.length ? (input.pcm.length / 16000) * 1000 : null;
+  return clean(await transcribeRaw(input), durationMs);
+}
+
+async function transcribeRaw({ wav, archive, pcm, live }) {
   const lang = speechLangCode();
   const t0 = performance.now();
   if (serverAvailable('transcribe')) {
