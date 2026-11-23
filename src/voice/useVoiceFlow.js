@@ -6,6 +6,7 @@ import { Recorder } from './recorder.js';
 import { transcribe, engines, startLiveRecognition, speechLangCode } from './stt.js';
 import { understand } from './nlu.js';
 import { speak, stopSpeaking } from './tts.js';
+import { chime } from './voiceClips.js';
 import { decide, afterCustomerAdded, fail, todayAnswer, EMPTY_CONVO } from './decide.js';
 import { reply, PACKS } from '../i18n/index.js';
 import { LIMITS } from '../lib/config.js';
@@ -109,6 +110,7 @@ export function useVoiceFlow() {
     clearTimeout(cd.timer);
     countdown.current = null;
     const entry = await saveEntryFrom(cd.action);
+    chime('saved'); // the 3-second save happens silently otherwise
     setUi((u) => ({ phase: u.phase === 'countdown' ? 'idle' : u.phase, countdown: null, lastSaved: entry }));
     return entry;
   };

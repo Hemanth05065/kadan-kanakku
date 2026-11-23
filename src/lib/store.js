@@ -14,6 +14,7 @@ const DEFAULT_SETTINGS = {
   uiLang: 'ta', // primary label language (English shown underneath)
   replyLang: 'auto', // auto = same language the owner spoke
   voice: 'auto', // auto | phone | server
+  shopVoice: true, // speak in the recorded shop voice when it has every word of a reply
   speechLang: 'ta-IN', // browser recognition fallback language
 };
 

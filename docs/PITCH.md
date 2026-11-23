@@ -13,9 +13,11 @@
 
 Backup if the hall is quiet enough: do two live entries by voice on the phone before the autopilot.
 
+Before the event: record the **shop voice** on the demo phone (Settings → Shop voice, about 15 minutes, plus the 6 demo names). The autopilot then answers in a real person's voice instead of the phone's synthetic one, and that is the first thing judges notice.
+
 ## Numbers worth saying
 
-- **160 automated tests**: number parsing in 4 languages, every spoken reply in the brief word for word, conversation flows, audio quality gate, offline sync, and the real database schema with row-level security (run on PostgreSQL via PGlite).
+- **192 automated tests**: number parsing in 4 languages, every spoken reply in the brief word for word, conversation flows, audio quality gate, offline sync, shop-voice stitching and Tamil number words, and the real database schema with row-level security (run on PostgreSQL via PGlite).
 - **Understanding eval** (`npm run eval:nlu`): 67 counter phrases across Tamil (Latin and Tamil script, regional phrasing), English, Hindi and Telugu, all-three-right (intent, customer, amount) **100%**, and **0 silent wrong saves**: a wrong entry is never confident enough to be saved without asking. Honest caveat: we wrote these phrases; the Accuracy lab exists to measure real shopkeepers' voices.
 - **On-device Whisper**: an 11-second clip transcribed in 2.1 s in the browser, no network.
 - **App size**: 127 KB gzipped; the on-device model (73 MB) downloads only if the owner turns it on.
@@ -25,6 +27,8 @@ Backup if the hall is quiet enough: do two live entries by voice on the phone be
 **Why not just use a big cloud API?** Shops have patchy internet and thin margins. Open models can run on a cheap server, on Groq's free tier, or on the phone itself. No vendor can switch it off or raise the price.
 
 **What if speech recognition gets it wrong?** Three layers. The quality gate refuses bad audio ("come closer and speak"). The LLM and the deterministic grammar must agree on spoken digits, or the app confirms aloud. Anything above ₹2,000 or below 0.8 confidence is read back before saving. And there's always a 3-second Undo, plus voice undo.
+
+**Why does it sound like a person?** Because it is one. Someone at the shop records about 95 short phrases and number words once, plus each customer's name, and every reply is stitched from those clips, like a railway announcement. Tamil numbers are built from their joining forms (*aayirathi noothi naappadhu* = 1,140). It needs no network, has no delay and no robot accent; any reply that needs a word that wasn't recorded falls back to the phone's voice.
 
 **How do names work if people say them differently?** Names are matched by sound (a "sound skeleton" that folds spelling, script, aspiration and Tamil case endings), honorifics are ignored, and every correction is saved as a shop-specific alias.
 

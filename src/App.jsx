@@ -8,6 +8,7 @@ import CustomerDetail from './screens/CustomerDetail.jsx';
 import Settings from './screens/Settings.jsx';
 import Statement from './screens/Statement.jsx';
 import Lab from './screens/Lab.jsx';
+import VoiceStudio from './screens/VoiceStudio.jsx';
 import { Login, Onboarding } from './screens/Login.jsx';
 
 function parseHash() {
@@ -18,6 +19,7 @@ function parseHash() {
   if (route === 'settings') return { route: 'settings' };
   if (route === 'statement' && id) return { route: 'statement', id };
   if (route === 'lab') return { route: 'lab' };
+  if (route === 'voice') return { route: 'voice' };
   return { route: 'home' };
 }
 
@@ -61,6 +63,7 @@ export default function App() {
       {r.route === 'settings' && <Settings go={go} />}
       {r.route === 'statement' && <Statement id={r.id} go={go} />}
       {r.route === 'lab' && <Lab go={go} />}
+      {r.route === 'voice' && <VoiceStudio go={go} />}
       <BottomNav route={r.route} go={go} />
     </>
   );

@@ -54,6 +54,9 @@ const te = {
     english: 'English',
     hindi: 'हिन्दी',
     telugu: 'తెలుగు',
+    shop_voice: 'షాప్ గొంతు',
+    name_voice: 'మీ గొంతులో పేరు',
+    names: 'పేర్లు',
   },
 
   replies: {

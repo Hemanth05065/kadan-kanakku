@@ -61,7 +61,7 @@ const en = {
     reply_language: 'Reply language',
     voice_output: 'Voice',
     phone_voice: 'Phone voice',
-    server_voice: 'Sarvam voice',
+    server_voice: 'Server voice',
     auto: 'Auto',
     tamil: 'Tamil',
     english: 'English',
@@ -125,6 +125,14 @@ const en = {
     record: 'Record',
     next: 'Next',
     or: 'or',
+    shop_voice: 'Shop voice',
+    name_voice: 'Name in your voice',
+    hold_to_record: 'Hold, say it, let go',
+    phrases: 'Phrases',
+    numbers: 'Numbers',
+    names: 'Names',
+    try_it: 'Try it',
+    recorded: 'recorded',
   },
 
   replies: {

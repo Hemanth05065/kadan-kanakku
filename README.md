@@ -37,6 +37,8 @@ Hold the big mic button and talk the way you already talk:
 
 Every entry keeps its **transcript and voice clip** — tap ▶ to replay it when a customer disputes an amount.
 
+**A real voice, not a robot.** In *Settings → Shop voice* someone at the shop records the reply phrases, the Tamil number words (with their joining forms: *irunoothi naappadhu* = 240) and each customer's name, about 15 minutes in all, once. Every reply is then stitched from those clips, the way station announcements are, so the app answers in a real person's voice, offline and with no delay. If a word is missing, that reply uses the phone's voice instead; a name that isn't recorded yet is simply left out. The recorded voice can be saved as a file and opened on a staff phone. With no recorded voice, the app picks the most natural phone voice (Google's Tamil voice on Android, Microsoft's natural voices in Edge) and never reads Tamil in a British or American accent.
+
 **Also in the box**
 
 - **Month-end statement** per customer: opening balance, every entry with running balance, closing balance. Save as PDF from the phone's print dialog (renders Tamil/Hindi/Telugu correctly) or send as WhatsApp text.
@@ -54,7 +56,7 @@ Every entry keeps its **transcript and voice clip** — tap ▶ to replay it whe
 | Speech → text (on the phone) | **Whisper tiny/base/small** in a Web Worker via [Transformers.js](https://github.com/huggingface/transformers.js) + ONNX Runtime Web | MIT / Apache-2.0 | the phone, offline |
 | Understanding | **Qwen 2.5 / Llama 3.x / gpt-oss** via any OpenAI-compatible server (Ollama, vLLM, llama.cpp, Groq) with JSON-schema output, validated by zod | Apache-2.0 / Llama | your server / Groq |
 | Understanding (on the phone) | Hand-built **Tamil + English grammar**: transliteration, sound-skeleton name matching, Tamil/English/mixed number parser | MIT (this repo) | the phone, offline |
-| Text → speech | Phone voice (`ta-IN`), or **AI4Bharat Indic Parler-TTS** server | Apache-2.0 | phone / your server |
+| Speaking back | **The shop voice**: phrases, number words and names recorded by a real person and stitched together; else the phone's voice (`ta-IN`, natural voices first), or the **AI4Bharat Indic Parler-TTS** server | MIT (this repo) / Apache-2.0 | the phone, offline / your server |
 | Data, auth, storage | **Supabase** (Postgres + RLS, phone OTP, Storage) | Apache-2.0 | Supabase cloud or self-hosted |
 | App | React 19 + Tailwind 4 PWA, IndexedDB offline queue | MIT | the phone |
 
@@ -148,8 +150,9 @@ src/
   i18n/            ta.js, en.js, hi.js, te.js — labels, spoken replies, WhatsApp text, parser vocabulary
   lib/             translit, names (sound matching), numbers, localParser, ledger maths, IndexedDB store, sync, auth, seed
   voice/           recorder (worklet, VAD/trim, quality gate), whisper.worker + localWhisper (on-device),
-                   stt / nlu / tts routers, decide (conversation brain), useVoiceFlow, reprocess
-  components/, screens/   Home (mic), Customers (+30-day overdue), Customer detail, Statement, Settings, Accuracy lab, Login
+                   stt / nlu / tts routers, decide (conversation brain), useVoiceFlow, reprocess,
+                   voicePack (recording script, Tamil number words, sentence stitching), voiceClips (storage, playback)
+  components/, screens/   Home (mic), Customers (+30-day overdue), Customer detail, Statement, Settings, Shop voice, Accuracy lab, Login
 supabase/
   migrations/      schema + RLS + storage policies
   functions/       transcribe (Whisper), understand (open LLM), speak (Indic Parler-TTS)
@@ -166,11 +169,12 @@ docs/              PITCH.md (2-minute demo), architecture.svg
 npm test
 ```
 
-160+ tests, no network or Docker needed:
+190+ tests, no network or Docker needed:
 
 - number parsing in Tamil, English, Hindi and Telugu (Latin and native scripts), transliteration, sound matching
 - every spoken reply in the brief, asserted word for word, and the clarification / alias / new-customer / large-amount / undo / two-failure flows
 - the audio quality gate and the Whisper hallucination guard
+- the shop voice: Tamil number words up to 10 lakh, every reply stitched from clips (with and without recorded names), clip clean-up (trim, level, fades; refusing silence, whispers and distortion) and phone-voice choice (never a British voice for Tamil)
 - the offline outbox and sync (IndexedDB faked, Supabase client faked)
 - **the real database migration on PostgreSQL 18** (PGlite, in-process): shop isolation under row-level security, computed balances, staff invites, owner-only hard deletes, private audio storage
 
@@ -205,6 +209,7 @@ Hindi ([hi.js](src/i18n/hi.js)) and Telugu ([te.js](src/i18n/te.js)) were added 
 | Offline sync | ✅ outbox + pull tested with faked IndexedDB/Supabase; schema + RLS tested on real Postgres (PGlite); still to try against a live Supabase project |
 | WhatsApp reminders | ✅ Tamil and English `wa.me` messages |
 | On-device Whisper | ✅ verified in the browser: 11 s clip transcribed in 2.1 s |
+| Shop voice (recorded human voice) | ✅ stitching, Tamil numbers, clip clean-up and fallbacks unit-tested; save → stitch → play and file export/import verified in the browser with generated test audio; still to record a real voice on a real phone mic |
 
 See [CONTRIBUTING.md](CONTRIBUTING.md) to help, and [docs/PITCH.md](docs/PITCH.md) for the 2-minute demo.
 

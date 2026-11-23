@@ -38,7 +38,14 @@ registerProcessor('kk-capture', KKCapture);
 const ARCHIVE_TYPES = ['audio/webm;codecs=opus', 'audio/ogg;codecs=opus', 'audio/webm', 'audio/mp4'];
 
 export class Recorder {
-  constructor() {
+  /**
+   * rate: capture rate (16 kHz for speech recognition; the shop-voice studio uses 24 kHz).
+   * studio: plain capture for recording the shop voice (no auto gain or echo cancelling,
+   * which make recorded words pump in level).
+   */
+  constructor({ rate = TARGET_RATE, studio = false } = {}) {
+    this.rate = rate;
+    this.studio = studio;
     this.stream = null;
     this.ctx = null;
     this.node = null;
@@ -60,15 +67,15 @@ export class Recorder {
       audio: {
         channelCount: 1,
         noiseSuppression: true,
-        echoCancellation: true,
-        autoGainControl: true,
-        sampleRate: TARGET_RATE,
+        echoCancellation: !this.studio,
+        autoGainControl: !this.studio,
+        sampleRate: this.rate,
       },
     });
     const Ctx = window.AudioContext || window.webkitAudioContext;
     let source;
     try {
-      this.ctx = new Ctx({ sampleRate: TARGET_RATE, latencyHint: 'interactive' });
+      this.ctx = new Ctx({ sampleRate: this.rate, latencyHint: 'interactive' });
       source = this.ctx.createMediaStreamSource(this.stream);
     } catch {
       // Some browsers refuse a context whose rate differs from the mic: use the default and resample.
@@ -116,7 +123,7 @@ export class Recorder {
     this.node.port.postMessage('start');
 
     this.mediaChunks = [];
-    const type = typeof MediaRecorder !== 'undefined' ? ARCHIVE_TYPES.find((t) => MediaRecorder.isTypeSupported(t)) : null;
+    const type = !this.studio && typeof MediaRecorder !== 'undefined' ? ARCHIVE_TYPES.find((t) => MediaRecorder.isTypeSupported(t)) : null;
     if (type) {
       this.media = new MediaRecorder(this.stream, { mimeType: type, audioBitsPerSecond: 24000 });
       this.media.ondataavailable = (e) => e.data.size && this.mediaChunks.push(e.data);
@@ -126,7 +133,7 @@ export class Recorder {
     }
   }
 
-  /** Stop and return { pcm (16 kHz, trimmed), wav, archive, quality, durationMs }. */
+  /** Stop and return { pcm (16 kHz, trimmed), wav, archive, quality, durationMs, raw, rawRate }. */
   async stop() {
     if (!this.capturing) return null;
     this.capturing = false;
@@ -136,7 +143,7 @@ export class Recorder {
     this.ending = null;
     this.onLevel?.(0);
 
-    const archive = await this.#stopArchive();
+    const archive = this.studio ? null : await this.#stopArchive();
     const len = this.chunks.reduce((s, c) => s + c.length, 0);
     const raw = new Float32Array(len);
     let o = 0;
@@ -151,6 +158,8 @@ export class Recorder {
       archive: archive || { blob: wav, mime: 'audio/wav' },
       quality,
       durationMs: Math.round(performance.now() - this.startedAt),
+      raw,
+      rawRate: this.ctx.sampleRate,
     };
   }
 

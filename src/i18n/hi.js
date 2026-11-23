@@ -54,6 +54,9 @@ const hi = {
     english: 'English',
     hindi: 'हिन्दी',
     telugu: 'తెలుగు',
+    shop_voice: 'दुकान की आवाज़',
+    name_voice: 'नाम आपकी आवाज़ में',
+    names: 'नाम',
   },
 
   replies: {
