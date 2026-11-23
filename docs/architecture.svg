@@ -1,0 +1,100 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1280 720" width="1280" height="720" font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif">
+  <defs>
+    <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#0f5132"/>
+    </marker>
+    <marker id="b" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse">
+      <path d="M0 0L10 5L0 10z" fill="#b45309"/>
+    </marker>
+    <style>
+      .t { font-size: 17px; font-weight: 700; fill: #0b3d26; }
+      .s { font-size: 13px; fill: #44403c; }
+      .lab { font-size: 12px; font-weight: 600; fill: #b45309; }
+      .box { fill: #fff; stroke: #0f5132; stroke-width: 1.5; }
+      .srv { fill: #fff; stroke: #b45309; stroke-width: 1.5; }
+      .note { fill: #fffbeb; stroke: #f59e0b; stroke-width: 1.5; stroke-dasharray: 5 4; }
+      .flow { stroke: #0f5132; stroke-width: 2.2; fill: none; marker-end: url(#a); }
+      .net { stroke: #b45309; stroke-width: 2; fill: none; stroke-dasharray: 7 5; marker-end: url(#b); }
+    </style>
+  </defs>
+  <rect width="1280" height="720" fill="#fffaf0"/>
+  <text x="50" y="52" font-size="30" font-weight="800" fill="#0f5132">Kadan Kanakku · how one spoken entry flows</text>
+  <text x="1230" y="52" font-size="16" text-anchor="end" fill="#78716c">fully open source · works offline</text>
+
+  <rect x="50" y="78" width="650" height="606" rx="28" fill="#eef6f1" stroke="#cfe3d7"/>
+  <text x="74" y="108" font-size="14" font-weight="800" letter-spacing="1.5" fill="#0f5132">ON THE PHONE · WORKS WITH NO INTERNET</text>
+  <rect x="760" y="78" width="470" height="606" rx="28" fill="#fff4e0" stroke="#f6d9a6"/>
+  <text x="784" y="108" font-size="14" font-weight="800" letter-spacing="1.5" fill="#b45309">OPEN-SOURCE SERVER · OPTIONAL</text>
+  <text x="784" y="128" class="s">Supabase Edge Functions hold the keys · self-host or Groq</text>
+
+  <!-- phone column A -->
+  <rect class="box" x="70" y="140" width="290" height="70" rx="14"/>
+  <text class="t" x="88" y="170">🎙 Hold to talk</text>
+  <text class="s" x="88" y="193">noise suppression · echo cancel · auto gain</text>
+
+  <rect class="box" x="70" y="230" width="290" height="70" rx="14"/>
+  <text class="t" x="88" y="260">Quality gate</text>
+  <text class="s" x="88" y="283">speech level · SNR · silence trim</text>
+
+  <rect class="box" x="70" y="320" width="290" height="70" rx="14"/>
+  <text class="t" x="88" y="350">Speech → text</text>
+  <text class="s" x="88" y="373">Whisper in the browser (Transformers.js)</text>
+
+  <rect class="box" x="70" y="410" width="290" height="70" rx="14"/>
+  <text class="t" x="88" y="440">Understanding</text>
+  <text class="s" x="88" y="463">ta · en · hi · te grammar ⊕ LLM cross-check</text>
+
+  <rect class="box" x="70" y="500" width="290" height="70" rx="14"/>
+  <text class="t" x="88" y="530">decide()</text>
+  <text class="s" x="88" y="553">confirm aloud · ask once · aliases · undo</text>
+
+  <rect class="box" x="70" y="590" width="290" height="70" rx="14"/>
+  <text class="t" x="88" y="620">IndexedDB + offline outbox</text>
+  <text class="s" x="88" y="643">every entry keeps its voice clip</text>
+
+  <path class="flow" d="M215 210 V228"/>
+  <path class="flow" d="M215 300 V318"/>
+  <path class="flow" d="M215 390 V408"/>
+  <path class="flow" d="M215 480 V498"/>
+  <path class="flow" d="M215 570 V588"/>
+
+  <!-- phone column B -->
+  <rect class="note" x="400" y="230" width="280" height="70" rx="14"/>
+  <text class="t" x="418" y="260">Too quiet or noisy?</text>
+  <text class="s" x="418" y="283">asks again, never guesses</text>
+  <path class="flow" d="M360 265 H398"/>
+
+
+  <rect class="box" x="400" y="500" width="280" height="70" rx="14"/>
+  <text class="t" x="418" y="530">Speak + 3 s auto-save</text>
+  <text class="s" x="418" y="553">“240 roobaai kadan. Baaki 1,140.”</text>
+  <path class="flow" d="M360 535 H398"/>
+
+  <!-- server -->
+  <rect class="srv" x="780" y="320" width="430" height="70" rx="14"/>
+  <text class="t" x="798" y="350">Whisper large-v3</text>
+  <text class="s" x="798" y="373">speaches / faster-whisper · Groq · shop names as hints</text>
+
+  <rect class="srv" x="780" y="410" width="430" height="70" rx="14"/>
+  <text class="t" x="798" y="440">Open LLM, JSON-schema output</text>
+  <text class="s" x="798" y="463">Qwen · Llama · gpt-oss via Ollama / vLLM / Groq</text>
+
+  <rect class="srv" x="780" y="500" width="430" height="70" rx="14"/>
+  <text class="t" x="798" y="530">Indic Parler-TTS</text>
+  <text class="s" x="798" y="553">only when the phone has no voice for the language</text>
+
+  <rect class="srv" x="780" y="590" width="430" height="70" rx="14"/>
+  <text class="t" x="798" y="620">Supabase Postgres + Storage</text>
+  <text class="s" x="798" y="643">row-level security per shop · phone OTP · staff</text>
+
+  <path class="net" d="M360 355 H778"/>
+  <text class="lab" x="380" y="347">online: Whisper large-v3 · offline: on the phone</text>
+  <text class="s" x="380" y="378">no engine at all → clip kept in Needs review</text>
+  <path class="net" d="M360 445 H778"/>
+  <text class="lab" x="380" y="437">online · if they disagree → confirm aloud</text>
+  <path class="net" d="M680 545 H778"/>
+  <path class="net" d="M360 625 H778"/>
+  <text class="lab" x="380" y="617">offline outbox syncs when back online</text>
+
+  <text x="50" y="708" font-size="13" fill="#78716c">MIT code · Whisper (MIT) · Transformers.js (Apache-2.0) · Supabase (Apache-2.0) · Qwen 2.5 (Apache-2.0) · Indic Parler-TTS (Apache-2.0)</text>
+</svg>

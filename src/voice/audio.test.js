@@ -47,3 +47,16 @@ describe('audio encoding', () => {
     expect(resample(new Float32Array(48000), 48000).length).toBe(16000);
   });
 });
+
+describe('Whisper hallucination guard', async () => {
+  const { looksHallucinated } = await import('./stt.js');
+  it('flags loops and over-long output', () => {
+    expect(looksHallucinated('திருக்கும் திருக்கும் திருக்கும் திருக்கும் திருக்கும்')).toBe(true);
+    expect(looksHallucinated('thank you thank you thank you thank you thank you thank you thank you thank you')).toBe(true);
+    expect(looksHallucinated('one two three four five six seven eight nine ten eleven twelve thirteen', 1000)).toBe(true);
+  });
+  it('accepts normal commands', () => {
+    expect(looksHallucinated('Murugan anna 240 rupees arisi and oil kadan', 3000)).toBe(false);
+    expect(looksHallucinated('Ravi Ravi 100 kadan', 2000)).toBe(false);
+  });
+});

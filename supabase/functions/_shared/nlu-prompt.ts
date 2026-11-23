@@ -1,6 +1,6 @@
 // The understanding prompt and output schema, shared by the `understand` edge function and
 // the offline evaluation script (scripts/eval-nlu.mjs), so what we measure is what we ship.
-// Plain JavaScript syntax on purpose: Deno and Node (type stripping) both load it as-is.
+// Only erasable TypeScript syntax: Deno type-checks it, Node (type stripping) loads it as-is.
 
 export const INTENTS = [
   "credit", "payment", "query_balance", "query_top", "query_today", "add_customer",
@@ -9,7 +9,7 @@ export const INTENTS = [
 
 export const LANGS = ["ta", "en", "hi", "te"];
 
-const nullable = (type) => ({ anyOf: [{ type }, { type: "null" }] });
+const nullable = (type: string) => ({ anyOf: [{ type }, { type: "null" }] });
 
 export const JSON_SCHEMA = {
   type: "object",

@@ -2,7 +2,8 @@ import { useEffect, useState } from 'react';
 import { BiLabel, Money, SyncBadge, Empty, useT } from '../components/ui.jsx';
 import { MicButton, LevelBar, VoicePanel } from '../components/MicPanel.jsx';
 import { EntryRow, EntryEditor, ReviewCard } from '../components/entries.jsx';
-import { useStore, useLedger, updateEntry, addAlias } from '../lib/store.js';
+import { useStore, useLedger, updateEntry, addAlias, resetDemo } from '../lib/store.js';
+import { DEMO_SCRIPT } from '../voice/demoScript.js';
 
 function Stat({ k, value, tone }) {
   return (
@@ -39,8 +40,33 @@ export default function Home({ flow, go }) {
           <h1 className="text-xl font-extrabold text-leaf-900">{t('app_name')}</h1>
           <p className="text-sm text-stone-500">{s.shop?.name}</p>
         </div>
-        <SyncBadge />
+        <div className="flex items-center gap-2">
+          {s.mode === 'local' && !ui.demo && (
+            <button
+              type="button"
+              className="rounded-full bg-amber-500 px-3 py-1.5 text-sm font-bold text-ink shadow"
+              onClick={async () => {
+                if (!confirm('Reset the demo shop and play the demo conversation?')) return;
+                await resetDemo();
+                flow.runDemo(DEMO_SCRIPT);
+              }}
+            >
+              ▶ {t('play_demo')}
+            </button>
+          )}
+          <SyncBadge />
+        </div>
       </header>
+
+      {ui.demo && (
+        <div className="mx-4 mt-2 flex items-center gap-3 rounded-2xl bg-ink px-4 py-2 text-white shadow-lg">
+          <span className="rounded-full bg-amber-500 px-2 text-xs font-bold text-ink">{ui.demo.step}/{ui.demo.total}</span>
+          <span className="min-w-0 flex-1 text-sm leading-tight">{ui.demo.note}</span>
+          <button type="button" className="rounded-lg bg-white/15 px-3 py-1 text-sm font-semibold" onClick={flow.stopDemo}>
+            ■ {t('stop')}
+          </button>
+        </div>
+      )}
 
       <main className="flex-1 space-y-4 overflow-y-auto px-4 py-3">
         <div className="grid grid-cols-2 gap-3">
@@ -49,6 +75,13 @@ export default function Home({ flow, go }) {
           <button type="button" onClick={() => go('#/customers')} className="col-span-2 rounded-2xl bg-leaf-800 p-3 text-left text-white shadow-sm">
             <BiLabel k="total_pending" className="text-sm font-semibold" />
             <p className="mt-1 text-3xl font-extrabold"><Money value={L.pending} /></p>
+          </button>
+          <button
+            type="button"
+            onClick={flow.speakSummary}
+            className="col-span-2 flex min-h-12 items-center justify-center gap-2 rounded-2xl bg-white font-semibold text-leaf-800 shadow-sm ring-1 ring-leaf-700/20"
+          >
+            🔊 <BiLabel k="today_summary" className="items-center" />
           </button>
         </div>
 

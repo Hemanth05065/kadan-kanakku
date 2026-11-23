@@ -7,6 +7,7 @@ import Customers from './screens/Customers.jsx';
 import CustomerDetail from './screens/CustomerDetail.jsx';
 import Settings from './screens/Settings.jsx';
 import Statement from './screens/Statement.jsx';
+import Lab from './screens/Lab.jsx';
 import { Login, Onboarding } from './screens/Login.jsx';
 
 function parseHash() {
@@ -16,6 +17,7 @@ function parseHash() {
   if (route === 'customer' && id) return { route: 'customer', id };
   if (route === 'settings') return { route: 'settings' };
   if (route === 'statement' && id) return { route: 'statement', id };
+  if (route === 'lab') return { route: 'lab' };
   return { route: 'home' };
 }
 
@@ -56,8 +58,9 @@ export default function App() {
       {r.route === 'home' && <Home flow={flow} go={go} />}
       {r.route === 'customers' && <Customers go={go} />}
       {r.route === 'customer' && <CustomerDetail id={r.id} go={go} />}
-      {r.route === 'settings' && <Settings />}
+      {r.route === 'settings' && <Settings go={go} />}
       {r.route === 'statement' && <Statement id={r.id} go={go} />}
+      {r.route === 'lab' && <Lab go={go} />}
       <BottomNav route={r.route} go={go} />
     </>
   );
