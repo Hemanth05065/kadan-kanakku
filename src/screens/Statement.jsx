@@ -77,9 +77,9 @@ export default function Statement({ id, go }) {
               <tr className="border-b border-stone-200 text-left text-xs text-stone-500">
                 <th className="py-1 font-semibold">{t('date')}</th>
                 <th className="py-1 font-semibold">{t('details')}</th>
-                <th className="py-1 text-right font-semibold">{t('credit')}</th>
-                <th className="py-1 text-right font-semibold">{t('payment')}</th>
-                <th className="py-1 text-right font-semibold">{t('balance')}</th>
+                <th className="py-1 pl-2 text-right font-semibold">{t('credit')}</th>
+                <th className="py-1 pl-2 text-right font-semibold">{t('payment')}</th>
+                <th className="py-1 pl-2 text-right font-semibold">{t('balance')}</th>
                 <th className="no-print" />
               </tr>
             </thead>
@@ -90,9 +90,9 @@ export default function Statement({ id, go }) {
                     {new Date(e.created_at).toLocaleDateString('en-IN', { day: '2-digit', month: 'short' })}
                   </td>
                   <td className="py-1.5 pr-1">{e.type === 'credit' ? (e.items?.join(', ') || t('credit')) : t('payment')}</td>
-                  <td className="py-1.5 text-right tabular-nums text-red-700">{e.type === 'credit' ? fmt(e.amount) : ''}</td>
-                  <td className="py-1.5 text-right tabular-nums text-leaf-700">{e.type === 'payment' ? fmt(e.amount) : ''}</td>
-                  <td className="py-1.5 text-right font-semibold tabular-nums">{fmt(e.running)}</td>
+                  <td className="py-1.5 pl-2 text-right tabular-nums text-red-700">{e.type === 'credit' ? fmt(e.amount) : ''}</td>
+                  <td className="py-1.5 pl-2 text-right tabular-nums text-leaf-700">{e.type === 'payment' ? fmt(e.amount) : ''}</td>
+                  <td className="py-1.5 pl-2 text-right font-semibold tabular-nums">{fmt(e.running)}</td>
                   <td className="no-print pl-1"><AudioButton entry={e} className="h-8 w-8 text-xs" /></td>
                 </tr>
               ))}

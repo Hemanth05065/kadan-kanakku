@@ -18,7 +18,7 @@ Backup if the hall is quiet enough: do two live entries by voice on the phone be
 - **160 automated tests**: number parsing in 4 languages, every spoken reply in the brief word for word, conversation flows, audio quality gate, offline sync, and the real database schema with row-level security (run on PostgreSQL via PGlite).
 - **Understanding eval** (`npm run eval:nlu`): 67 counter phrases across Tamil (Latin and Tamil script, regional phrasing), English, Hindi and Telugu, all-three-right (intent, customer, amount) **100%**, and **0 silent wrong saves**: a wrong entry is never confident enough to be saved without asking. Honest caveat: we wrote these phrases; the Accuracy lab exists to measure real shopkeepers' voices.
 - **On-device Whisper**: an 11-second clip transcribed in 2.1 s in the browser, no network.
-- **App size**: 111 KB gzipped; the on-device model (73 MB) downloads only if the owner turns it on.
+- **App size**: 127 KB gzipped; the on-device model (73 MB) downloads only if the owner turns it on.
 
 ## Likely questions
 
