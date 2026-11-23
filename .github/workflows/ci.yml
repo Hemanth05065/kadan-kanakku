@@ -1,0 +1,34 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  app:
+    name: Tests, eval and build
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 24
+          cache: npm
+      - run: npm ci
+      - name: Unit, conversation, audio, sync and database (RLS) tests
+        run: npm test
+      - name: Understanding eval (fails below 95%)
+        run: npm run eval:nlu -- --min 0.95
+      - name: Production build
+        run: npm run build
+
+  edge-functions:
+    name: Edge functions type-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: denoland/setup-deno@v2
+        with:
+          deno-version: v2.x
+      - run: deno check --config supabase/functions/deno.json supabase/functions/transcribe/index.ts supabase/functions/understand/index.ts supabase/functions/speak/index.ts
