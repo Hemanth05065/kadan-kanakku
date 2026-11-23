@@ -135,6 +135,18 @@ const ta = {
     names: 'பெயர்கள்',
     try_it: 'கேட்டுப் பாருங்க',
     recorded: 'பதிவானது',
+    hands_free: 'அழுத்தாம பேசுங்க',
+    hf_listening: 'கேட்டுக்கிட்டே இருக்கேன், பேசுங்க',
+    hf_tap_stop: 'நிறுத்த தொடுங்க',
+    hf_ignored: 'கணக்கு இல்லை, விட்டுட்டேன்',
+    hf_needs_engine: 'இதுக்கு on-device மாடல் (Settings) இல்லை சர்வர் வேணும்',
+    hf_quiet_off: '10 நிமிஷம் யாரும் பேசல, நிறுத்திட்டேன்',
+    hf_wait: 'பதில் சொல்லும் முன் காத்திருப்பு',
+    wait_short: 'கொஞ்சம்',
+    wait_normal: 'சாதாரணம்',
+    wait_long: 'அதிகம்',
+    hf_ai_detector: 'AI குரல் கண்டுபிடிப்பு',
+    hf_basic_detector: 'சாதாரண கண்டுபிடிப்பு',
   },
 
   // Each reply has `show` (Tanglish, shown on screen) and `say` (Tamil script, for the voice).

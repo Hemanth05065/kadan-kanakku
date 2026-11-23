@@ -221,6 +221,7 @@ export default function Settings({ go }) {
         <Choice k="speech_language" value={st.speechLang} onChange={(v) => setSettings({ speechLang: v })} options={[['ta-IN', 'tamil'], ['en-IN', 'english'], ['hi-IN', 'hindi'], ['te-IN', 'telugu']]} />
         <Choice k="reply_language" value={st.replyLang} onChange={(v) => setSettings({ replyLang: v })} options={[['auto', 'auto'], ['ta', 'tamil'], ['en', 'english'], ['hi', 'hindi'], ['te', 'telugu']]} />
         <Choice k="voice_output" value={st.voice} onChange={(v) => setSettings({ voice: v })} options={[['auto', 'auto'], ['phone', 'phone_voice'], ['server', 'server_voice']]} />
+        <Choice k="hf_wait" value={st.handsFreeWait || 'normal'} onChange={(v) => setSettings({ handsFreeWait: v })} options={[['short', 'wait_short'], ['normal', 'wait_normal'], ['long', 'wait_long']]} />
         <Button variant="secondary" className="w-full" onClick={() => { const l = ['ta', 'en', 'hi', 'te'].includes(st.replyLang) ? st.replyLang : (st.speechLang || 'ta-IN').slice(0, 2); speak(reply('credit_saved', l, { name: 'Murugan anna', nameSay: l === 'ta' ? 'முருகன் அண்ணா' : 'Murugan anna', nameKey: 'murugan anna', amt: '240', amtSay: '240', amtN: 240, total: '1,140', totalSay: '1140', totalN: 1140 })); }}>
           🔊 {t('test_voice')} · {en('test_voice')}
         </Button>

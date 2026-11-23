@@ -1,4 +1,4 @@
-// Hold-to-talk microphone capture.
+// Microphone capture: hold-to-talk clips, or a continuous stream for hands-free listening.
 //  • getUserMedia with noise suppression + echo cancellation + auto gain
 //  • raw PCM through an AudioWorklet -> 16 kHz, level meter, silence trim, quality verdict
 //  • a small Opus clip (MediaRecorder) kept with each entry to settle disputes
@@ -107,10 +107,36 @@ export class Recorder {
 
   #onPcm(msg) {
     if (msg.data?.length) {
-      this.chunks.push(msg.data);
+      if (this.onChunk) {
+        // Hands-free: hand the audio on at 16 kHz instead of collecting it.
+        const rate = this.ctx?.sampleRate || TARGET_RATE;
+        this.onChunk(rate === TARGET_RATE ? msg.data : resample(msg.data, rate, TARGET_RATE));
+      } else {
+        this.chunks.push(msg.data);
+      }
       this.onLevel?.(levelOf(msg.data));
     }
     if (msg.type === 'end') this.ending?.();
+  }
+
+  /** Hands-free: keep the microphone open and pass every chunk (16 kHz) to onChunk. */
+  async listen(onLevel, onChunk) {
+    await this.warmUp();
+    if (this.ctx.state === 'suspended') await this.ctx.resume();
+    this.chunks = [];
+    this.onLevel = onLevel;
+    this.onChunk = onChunk;
+    this.capturing = true;
+    this.node.port.postMessage('start');
+  }
+
+  endListen() {
+    if (!this.onChunk) return;
+    this.onChunk = null;
+    this.capturing = false;
+    this.node?.port.postMessage('stop');
+    this.onLevel?.(0);
+    this.onLevel = null;
   }
 
   async start(onLevel) {
@@ -177,6 +203,7 @@ export class Recorder {
   }
 
   cancel() {
+    this.onChunk = null;
     this.capturing = false;
     this.node?.port.postMessage('stop');
     if (this.media && this.media.state !== 'inactive') this.media.stop();

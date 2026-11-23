@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { BiLabel, Money, SyncBadge, Empty, useT } from '../components/ui.jsx';
-import { MicButton, LevelBar, VoicePanel } from '../components/MicPanel.jsx';
+import { MicButton, LevelBar, VoicePanel, HandsFreeButton, HandsFreeToggle } from '../components/MicPanel.jsx';
 import { EntryRow, EntryEditor, ReviewCard } from '../components/entries.jsx';
 import { useStore, useLedger, updateEntry, addAlias, resetDemo } from '../lib/store.js';
 import { DEMO_SCRIPT } from '../voice/demoScript.js';
@@ -17,7 +17,7 @@ function Stat({ k, value, tone }) {
 export default function Home({ flow, go }) {
   const s = useStore();
   const L = useLedger();
-  const { t } = useT();
+  const { t, en } = useT();
   const [review, setReview] = useState(null); // { initial, entry }
   const { ui } = flow;
 
@@ -32,6 +32,10 @@ export default function Home({ flow, go }) {
   }, [flow.pressStart, flow.pressEnd]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const idleView = ui.phase === 'idle' && !ui.reply && !ui.heard;
+  const hf = ui.handsFree;
+
+  // Hands-free listens only on this screen, where its replies and Undo button are visible.
+  useEffect(() => () => flow.stopHandsFree(), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-4.75rem)] max-w-lg flex-col">
@@ -118,10 +122,31 @@ export default function Home({ flow, go }) {
           <VoicePanel flow={flow} />
         </div>
         <div className="flex flex-col items-center gap-2">
-          <LevelBar level={ui.level} active={ui.phase === 'recording'} />
-          <MicButton phase={ui.phase} onStart={flow.pressStart} onEnd={flow.pressEnd} />
-          {idleView && <BiLabel k="hold_to_talk" className="items-center text-base font-semibold text-leaf-900" />}
-          {ui.phase === 'recording' && <BiLabel k="release_to_send" className="items-center text-base font-semibold text-red-700" />}
+          <LevelBar level={ui.level} active={ui.phase === 'recording' || Boolean(hf)} />
+          <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center">
+            <span />
+            {hf ? (
+              <HandsFreeButton phase={ui.phase} level={ui.level} onStop={() => flow.stopHandsFree()} />
+            ) : (
+              <MicButton phase={ui.phase} onStart={flow.pressStart} onEnd={flow.pressEnd} />
+            )}
+            <div className="flex justify-center">
+              {!hf && !ui.demo && ui.phase !== 'recording' && <HandsFreeToggle onStart={flow.startHandsFree} />}
+            </div>
+          </div>
+          {hf ? (
+            ui.phase !== 'recording' && (
+              <p className="text-center text-sm text-stone-600">
+                <span className="block text-base font-semibold text-leaf-900">{t('hf_listening')}</span>
+                {t('hf_tap_stop')} · <span className="text-xs">{en(hf.detector === 'silero' ? 'hf_ai_detector' : 'hf_basic_detector')}</span>
+              </p>
+            )
+          ) : (
+            <>
+              {idleView && <BiLabel k="hold_to_talk" className="items-center text-base font-semibold text-leaf-900" />}
+              {ui.phase === 'recording' && <BiLabel k="release_to_send" className="items-center text-base font-semibold text-red-700" />}
+            </>
+          )}
         </div>
       </div>
 

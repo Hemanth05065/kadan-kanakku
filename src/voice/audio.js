@@ -32,8 +32,10 @@ export function levelOf(chunk) {
 /**
  * Speech/noise analysis on 16 kHz PCM. Returns the trimmed clip and a verdict:
  *   ok | short (nothing said / accidental tap) | quiet (too far from the mic) | noisy (speech buried in noise)
+ * noiseDb: the room's noise level when already known (hands-free clips are cut close to the
+ * speech, so their own quietest moments are not a fair measure of the room).
  */
-export function analyse(pcm, rate = TARGET_RATE) {
+export function analyse(pcm, rate = TARGET_RATE, { noiseDb: knownNoise = null } = {}) {
   const frame = Math.round(rate * 0.02); // 20 ms
   const n = Math.floor(pcm.length / frame);
   const totalMs = (pcm.length / rate) * 1000;
@@ -52,7 +54,7 @@ export function analyse(pcm, rate = TARGET_RATE) {
   }
   const sorted = Array.from(energies).sort((a, b) => a - b);
   const pct = (p) => sorted[Math.min(n - 1, Math.floor(p * n))];
-  const noiseDb = pct(0.15);
+  const noiseDb = knownNoise == null ? pct(0.15) : Math.min(knownNoise, pct(0.15));
   const speechDb = pct(0.9);
   const threshold = Math.max(noiseDb + 8, -50);
 
