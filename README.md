@@ -1,6 +1,8 @@
 # கடன் கணக்கு · Kadan Kanakku
 
-**A voice-first credit ledger for kirana shops in Tamil Nadu — speak Tamil, English or Tanglish, and it keeps the book.**
+[![CI](https://github.com/Hemanth05065/kadan-kanakku/actions/workflows/ci.yml/badge.svg)](https://github.com/Hemanth05065/kadan-kanakku/actions/workflows/ci.yml) ![License: MIT](https://img.shields.io/badge/license-MIT-green) ![Open models](https://img.shields.io/badge/AI-open%20weights-orange)
+
+**A voice-first credit ledger for kirana shops in Tamil Nadu — speak Tamil, English or Tanglish (Hindi and Telugu too), and it keeps the book.**
 Fully open source: MIT-licensed code, open-weight AI models, self-hostable end to end, and it still works with **no internet** thanks to Whisper running on the phone.
 
 > *"Murugan anna, 240 rupees, arisi and oil, kadan"*
@@ -29,8 +31,20 @@ Hold the big mic button and talk the way you already talk:
 | Last-a pottadha cancel pannu | Seri, cancel pannitten. |
 | *(too far / too noisy)* | Konjam pakkathula vandhu pesunga. *(never guesses)* |
 | *(two failed tries)* | Puriyala. Screen-la type pannunga. → manual form, clip kept in **Needs review** |
+| Indru kanakku evlo? | Indru 3,340 kadan, 100 varavu. Mottham baaki 8,400. |
+| Ravi ka dedh sau udhaar *(Hindi)* | Ravi, 150 rupaye udhaar. Kul baaki … |
+| Ravi garu rendu vandala yabhai appu *(Telugu)* | Ravi garu, 250 rupayalu appu. Motham baaki … |
 
-Every entry keeps its **transcript and voice clip** — tap ▶ to replay it when a customer disputes an amount. Customers get a polite **WhatsApp reminder** in Tamil or English.
+Every entry keeps its **transcript and voice clip** — tap ▶ to replay it when a customer disputes an amount.
+
+**Also in the box**
+
+- **Month-end statement** per customer: opening balance, every entry with running balance, closing balance. Save as PDF from the phone's print dialog (renders Tamil/Hindi/Telugu correctly) or send as WhatsApp text.
+- **30+ days unpaid** list with one-tap WhatsApp reminders in the customer's language; the app remembers who was reminded when.
+- **Staff accounts**: the owner shares a 6-digit code, staff sign in with their own phone. Staff can add entries but not hard-delete; every entry records who made it.
+- **Today's summary** by voice or button at closing time.
+- **Demo autopilot** (Home → ▶ Demo): plays a scripted counter conversation through the real pipeline with captions, so a noisy hall can't break a pitch. See [docs/PITCH.md](docs/PITCH.md).
+- **Accuracy lab** (Settings): say test phrases into the real mic and see word error rate and understanding; export the recordings to score other speech engines.
 
 ## 100% open-source AI stack
 
@@ -66,9 +80,11 @@ flowchart LR
 
 **Hybrid understanding.** The LLM handles messy phrasing; the on-device grammar is deterministic about numbers and names. When they disagree on an amount the user actually said in digits, confidence drops below 0.8 and the app **confirms aloud instead of saving silently**. If the LLM is unreachable, the grammar alone runs the whole flow — so voice entry keeps working offline.
 
+**Whisper hallucination guard.** On noise, Whisper sometimes loops ("thank you thank you…") or invents long sentences. Output that repeats or is far longer than the audio could hold is treated as "didn't hear you", and on-device decoding is capped at 64 tokens (8.5 s → 1.6 s on a noise clip).
+
 **Names by sound, not spelling.** Every name is reduced to a *sound skeleton* (Tamil script transliterated, aspiration/voicing/vowel length/doubling folded, vocative and case endings like *-kku, -oda* stripped): `Murugan`, `Muruga`, `முருகன்`, `Muruganukku` all match; `Laxmi` = `Lakshmi`; honorifics (*anna, akka, sir*) are ignored. Every correction becomes a **shop-specific alias**, so recognition improves with use.
 
-**Numbers in any language.** `240`, `₹1,500`, `2k`, `two-forty`, `fifteen hundred`, `irunooru naarpadhu`, `இருநூற்று நாற்பது`, `aayirathu ainooru`, `irubathiyanju`, `rendu thousand` … and `two kilo arisi, 120` correctly reads ₹120 (quantities aren't prices).
+**Numbers in any language.** `240`, `₹1,500`, `2k`, `two-forty`, `fifteen hundred`, `irunooru naarpadhu`, `இருநூற்று நாற்பது`, `aayirathu ainooru`, `irubathiyanju`, `rendu thousand`, Hindi `dedh sau` / `saade teen sau`, Telugu `rendu vandala yabhai` … and `two kilo arisi, 120` correctly reads ₹120 (quantities aren't prices; `2 kg` is never "2 thousand"). The same sound can mean different numbers in different languages (Telugu *edu* = 7, Tamil *ettu* = 8), so the utterance's language is detected first.
 
 **Never drop an entry.** Unclear or noisy clips are stored as *Needs review* with their audio; if a retry succeeds they're resolved automatically. Clips recorded with no engine available are transcribed in the background when one comes back, with a one-tap suggestion.
 
@@ -129,28 +145,52 @@ The microphone needs HTTPS. Either deploy `dist/` (`npm run build`) to any stati
 
 ```
 src/
-  i18n/            ta.js, en.js — labels, spoken replies, WhatsApp text, parser vocabulary (add hi.js, te.js here)
+  i18n/            ta.js, en.js, hi.js, te.js — labels, spoken replies, WhatsApp text, parser vocabulary
   lib/             translit, names (sound matching), numbers, localParser, ledger maths, IndexedDB store, sync, auth, seed
   voice/           recorder (worklet, VAD/trim, quality gate), whisper.worker + localWhisper (on-device),
                    stt / nlu / tts routers, decide (conversation brain), useVoiceFlow, reprocess
-  components/, screens/   Home (mic), Customers, Customer detail, Settings, Login
+  components/, screens/   Home (mic), Customers (+30-day overdue), Customer detail, Statement, Settings, Accuracy lab, Login
 supabase/
   migrations/      schema + RLS + storage policies
   functions/       transcribe (Whisper), understand (open LLM), speak (Indic Parler-TTS)
+  tests/           migration + row-level security tests on real Postgres (PGlite)
 ai-server/         docker-compose: speaches + Ollama (+ TTS)
+eval/              cases.json: counter phrases with expected commands
+scripts/           eval-nlu.mjs (understanding), eval-stt.mjs (speech engines), make-icons.mjs
+docs/              PITCH.md (2-minute demo), architecture.svg
 ```
 
-## Tests
+## Tests and accuracy
 
 ```powershell
 npm test
 ```
 
-86 unit tests cover Tamil/English/mixed number parsing, transliteration and sound matching, every spoken reply in the spec (asserted word for word), the clarification / alias / new-customer / large-amount / undo / two-failure flows, the LLM ⊕ grammar merge, and the audio quality gate.
+160+ tests, no network or Docker needed:
+
+- number parsing in Tamil, English, Hindi and Telugu (Latin and native scripts), transliteration, sound matching
+- every spoken reply in the brief, asserted word for word, and the clarification / alias / new-customer / large-amount / undo / two-failure flows
+- the audio quality gate and the Whisper hallucination guard
+- the offline outbox and sync (IndexedDB faked, Supabase client faked)
+- **the real database migration on PostgreSQL 18** (PGlite, in-process): shop isolation under row-level security, computed balances, staff invites, owner-only hard deletes, private audio storage
+
+```powershell
+npm run eval:nlu
+```
+
+Scores understanding on [eval/cases.json](eval/cases.json): 67 counter phrases across Tamil (Latin and Tamil script, Chennai/Madurai/Coimbatore phrasing), English, Hindi and Telugu. Current result for the on-device grammar: **100% with intent, customer and amount all right, and 0 "silent wrong saves"** (wrong entries confident enough to save without asking — the number that must stay at zero). Add `--llm` with `LLM_BASE_URL`/`LLM_MODEL` set to score your open LLM and the LLM ⊕ grammar merge with the exact server prompt. Honest caveat: these phrases were written by us; real accuracy comes from real voices:
+
+```powershell
+npm run eval:stt -- kadan-eval.json --engine local:onnx-community/whisper-base
+```
+
+Record phrases in the app's **Accuracy lab**, export, and score any Whisper (server with `--engine server`, or local models; models cache under `~/.cache/kadan-kanakku`). A Tamil-tuned Whisper medium exists for the browser (`santhosh63/whisper-tamil-medium-web`, 740 MB, laptops only) and in CTranslate2 form for servers; this is how you'd decide whether it beats large-v3 for your shops.
+
+CI runs all of the above (eval must stay ≥ 95%), the build, and a Deno type-check of the edge functions.
 
 ## Adding a language
 
-Copy [src/i18n/ta.js](src/i18n/ta.js) to e.g. `te.js`, translate `labels`, `replies`, `whatsapp`, fill `lexicon` and `numbers` (spellings in Latin and native script), and register it in [src/i18n/index.js](src/i18n/index.js). Labels, replies and the on-device parser pick it up automatically.
+Hindi ([hi.js](src/i18n/hi.js)) and Telugu ([te.js](src/i18n/te.js)) were added exactly this way. Copy [src/i18n/ta.js](src/i18n/ta.js) to e.g. `kn.js`, translate `labels`, `replies`, `whatsapp`, fill `lexicon` and `numbers` (spellings in Latin and native script), and register it in [src/i18n/index.js](src/i18n/index.js). Labels, replies and the on-device parser pick it up automatically.
 
 ## Status against the brief
 
@@ -162,9 +202,11 @@ Copy [src/i18n/ta.js](src/i18n/ta.js) to e.g. `te.js`, translate `labels`, `repl
 | Mixed-language numbers parse | ✅ 40+ number tests incl. Tamil script |
 | Noisy audio is re-asked, never saved wrong | ✅ quality gate verified on real speech with added noise |
 | Voice undo | ✅ verified |
-| Offline sync | ✅ outbox + pull implemented; needs a live Supabase project to exercise |
+| Offline sync | ✅ outbox + pull tested with faked IndexedDB/Supabase; schema + RLS tested on real Postgres (PGlite); still to try against a live Supabase project |
 | WhatsApp reminders | ✅ Tamil and English `wa.me` messages |
 | On-device Whisper | ✅ verified in the browser: 11 s clip transcribed in 2.1 s |
+
+See [CONTRIBUTING.md](CONTRIBUTING.md) to help, and [docs/PITCH.md](docs/PITCH.md) for the 2-minute demo.
 
 Honest limits: Whisper tiny/base are rough on Tamil — they're the offline safety net; server `large-v3` is the main engine. The Indic Parler-TTS server is optional and slower on CPU than the phone's own voice.
 
