@@ -56,7 +56,7 @@ export default function App() {
       {r.route === 'home' && <Home flow={flow} go={go} />}
       {r.route === 'customers' && <Customers go={go} />}
       {r.route === 'customer' && <CustomerDetail id={r.id} go={go} />}
-      {r.route === 'settings' && <Settings />}
+      {r.route === 'settings' && <Settings go={go} />}
       {r.route === 'statement' && <Statement id={r.id} go={go} />}
       <BottomNav route={r.route} go={go} />
     </>

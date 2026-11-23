@@ -6,8 +6,8 @@ import { Recorder } from './recorder.js';
 import { transcribe, engines, startLiveRecognition, speechLangCode } from './stt.js';
 import { understand } from './nlu.js';
 import { speak, stopSpeaking } from './tts.js';
-import { decide, afterCustomerAdded, fail, EMPTY_CONVO } from './decide.js';
-import { reply } from '../i18n/index.js';
+import { decide, afterCustomerAdded, fail, todayAnswer, EMPTY_CONVO } from './decide.js';
+import { reply, PACKS } from '../i18n/index.js';
 import { LIMITS } from '../lib/config.js';
 import { getState, addEntry, updateEntry, removeEntry, addCustomer, addAlias, lastUndoable } from '../lib/store.js';
 import { buildNameIndex } from '../lib/names.js';
@@ -46,6 +46,8 @@ export function useVoiceFlow() {
   const lastActivity = useRef(0);
   const justSaved = useRef(null);
   const lastClipKey = useRef(null);
+  const lastOptions = useRef([]);
+  const demoRun = useRef(null);
 
   const replyLang = () => {
     const pref = getState().settings.replyLang;
@@ -155,6 +157,7 @@ export function useVoiceFlow() {
         return say(action.reply, 'idle');
       }
       case 'ask':
+        lastOptions.current = action.options || [];
         setUi({ options: action.options || [] });
         return say(action.reply, 'awaiting');
       case 'answer':
@@ -335,6 +338,60 @@ export function useVoiceFlow() {
     setUi({ manual: null, phase: 'idle', options: [] });
   }, [setUi]);
 
+
+  /** Speak today's totals ("Indru 3,340 kadan, 100 varavu. Mottham baaki 8,400."). */
+  const speakSummary = useCallback(async () => {
+    stopSpeaking();
+    const st = getState().settings;
+    const lang = PACKS[st.replyLang] ? st.replyLang : st.uiLang || 'ta';
+    await run(todayAnswer(ctxNow(), lang), null);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  /**
+   * Demo autopilot: plays a scripted counter conversation through the real pipeline
+   * (understanding, decisions, spoken replies, saves). Typed out like live captions.
+   */
+  const runDemo = useCallback(async (script) => {
+    if (demoRun.current) return;
+    const token = {};
+    demoRun.current = token;
+    const alive = () => demoRun.current === token;
+    const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
+    convo.current = EMPTY_CONVO;
+    try {
+      for (let i = 0; i < script.length && alive(); i++) {
+        const step = script[i];
+        setUi({ demo: { step: i + 1, total: script.length, note: step.note || null } });
+        if (step.say) {
+          setUi({ phase: 'recording', heard: '', reply: null, options: [], engine: 'demo autopilot' });
+          for (let k = 2; k <= step.say.length + 1 && alive(); k += 2) {
+            setUi({ heard: step.say.slice(0, k), level: 0.35 + Math.random() * 0.5 });
+            await sleep(28);
+          }
+          setUi({ level: 0 });
+          if (!alive()) break;
+          await processText(step.say, null);
+        } else if (step.tap) {
+          await sleep(700);
+          const opt = lastOptions.current.find((o) => String(o.label).toLowerCase().includes(step.tap.toLowerCase()));
+          if (opt) await quickReply(opt.value);
+        } else if (step.summary) {
+          await speakSummary();
+        }
+        await sleep(step.pause ?? 900);
+      }
+      if (countdown.current) await commitCountdown();
+    } finally {
+      if (alive()) demoRun.current = null;
+      setUi({ demo: null, phase: 'idle', level: 0 });
+    }
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const stopDemo = useCallback(() => {
+    demoRun.current = null;
+    stopSpeaking();
+  }, []);
+
   const dismiss = useCallback(() => {
     stopSpeaking();
     convo.current = EMPTY_CONVO;
@@ -373,5 +430,8 @@ export function useVoiceFlow() {
     closeManual,
     completeManual,
     dismiss,
+    speakSummary,
+    runDemo,
+    stopDemo,
   };
 }

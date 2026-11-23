@@ -1,7 +1,8 @@
+import { useEffect, useState } from 'react';
 import { BiLabel, Button, useT } from '../components/ui.jsx';
 import { useStore, setSettings, resetDemo } from '../lib/store.js';
 import { syncNow } from '../lib/sync.js';
-import { signOut } from '../lib/auth.js';
+import { signOut, createInvite, listMembers } from '../lib/auth.js';
 import { speak, hasPhoneVoice } from '../voice/tts.js';
 import { reply } from '../i18n/index.js';
 import { DEVICE_MODELS, loadDeviceModel, unloadDeviceModel, useWhisperStatus } from '../voice/localWhisper.js';
@@ -99,7 +100,64 @@ function OnDeviceAI() {
   );
 }
 
-export default function Settings() {
+
+/** Owner invites staff with a 6-digit code; staff sign in with their own phone and type it. */
+function StaffCard() {
+  const s = useStore();
+  const { t, en } = useT();
+  const [members, setMembers] = useState([]);
+  const [code, setCode] = useState(null);
+  const [error, setError] = useState(null);
+  const owner = s.shop?.role !== 'staff';
+  useEffect(() => {
+    if (s.online) listMembers().then(setMembers).catch(() => {});
+  }, [s.online, code]);
+  const shareText = code
+    ? `Join ${s.shop?.name} on Kadan Kanakku: open the app, sign in with your phone, choose "Join a shop with a code" and enter ${code} (valid for 2 days).`
+    : '';
+  return (
+    <Card title="staff">
+      <ul className="divide-y divide-stone-100 text-sm">
+        {members.map((m) => (
+          <li key={m.user_id} className="flex justify-between py-2">
+            <span>{m.isMe ? `${t('you')} · ${en('you')}` : `${m.user_id.slice(0, 8)}…`}</span>
+            <span className="rounded-full bg-stone-100 px-2 text-xs font-semibold">{m.role === 'owner' ? t('owner') : t('staff')}</span>
+          </li>
+        ))}
+      </ul>
+      {owner && !code && (
+        <Button
+          variant="secondary"
+          className="w-full"
+          disabled={!s.online}
+          onClick={async () => {
+            setError(null);
+            try { setCode(await createInvite()); } catch (e) { setError(e.message); }
+          }}
+        >
+          + {t('add_staff')} · {en('add_staff')}
+        </Button>
+      )}
+      {code && (
+        <div className="space-y-2 rounded-xl bg-leaf-50 p-3 text-center">
+          <BiLabel k="invite_code" className="items-center text-sm text-stone-600" />
+          <p className="text-4xl font-extrabold tracking-[0.3em] text-leaf-900">{code}</p>
+          <a
+            href={`https://wa.me/?text=${encodeURIComponent(shareText)}`}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="inline-block rounded-xl bg-[#25D366] px-4 py-2 font-semibold text-white"
+          >
+            💬 {t('send')}
+          </a>
+        </div>
+      )}
+      {error && <p className="text-sm text-red-700">{error}</p>}
+    </Card>
+  );
+}
+
+export default function Settings({ go }) {
   const s = useStore();
   const { t, en } = useT();
   const w = useWhisperStatus();
@@ -118,11 +176,11 @@ export default function Settings() {
       <OnDeviceAI />
 
       <Card>
-        <Choice k="reply_language" value={st.replyLang} onChange={(v) => setSettings({ replyLang: v })} options={[['auto', 'auto'], ['ta', 'tamil'], ['en', 'english']]} />
-        <Choice k="speech_language" value={st.speechLang} onChange={(v) => setSettings({ speechLang: v })} options={[['ta-IN', 'tamil'], ['en-IN', 'english']]} />
+        <Choice k="ui_language" value={st.uiLang} onChange={(v) => setSettings({ uiLang: v })} options={[['ta', 'tamil'], ['en', 'english'], ['hi', 'hindi'], ['te', 'telugu']]} />
+        <Choice k="speech_language" value={st.speechLang} onChange={(v) => setSettings({ speechLang: v })} options={[['ta-IN', 'tamil'], ['en-IN', 'english'], ['hi-IN', 'hindi'], ['te-IN', 'telugu']]} />
+        <Choice k="reply_language" value={st.replyLang} onChange={(v) => setSettings({ replyLang: v })} options={[['auto', 'auto'], ['ta', 'tamil'], ['en', 'english'], ['hi', 'hindi'], ['te', 'telugu']]} />
         <Choice k="voice_output" value={st.voice} onChange={(v) => setSettings({ voice: v })} options={[['auto', 'auto'], ['phone', 'phone_voice'], ['server', 'server_voice']]} />
-        <Choice k="app_name" value={st.uiLang} onChange={(v) => setSettings({ uiLang: v })} options={[['ta', 'tamil'], ['en', 'english']]} />
-        <Button variant="secondary" className="w-full" onClick={() => speak(reply('credit_saved', st.replyLang === 'en' ? 'en' : 'ta', { name: 'Murugan anna', nameSay: 'முருகன் அண்ணா', amt: '240', amtSay: '240', total: '1,140', totalSay: '1140' }))}>
+        <Button variant="secondary" className="w-full" onClick={() => { const l = ['ta', 'en', 'hi', 'te'].includes(st.replyLang) ? st.replyLang : (st.speechLang || 'ta-IN').slice(0, 2); speak(reply('credit_saved', l, { name: 'Murugan anna', nameSay: l === 'ta' ? 'முருகன் அண்ணா' : 'Murugan anna', amt: '240', amtSay: '240', total: '1,140', totalSay: '1140' })); }}>
           🔊 {t('test_voice')} · {en('test_voice')}
         </Button>
       </Card>
@@ -134,10 +192,18 @@ export default function Settings() {
           <Status ok={w.state === 'ready'} label="Whisper (on this phone)" detail={w.state} />
           <Status ok label="Tamil grammar parser (on this phone)" detail="always" />
           <Status ok={browserSR} label="Browser speech recognition" detail={browserSR ? 'fallback' : 'n/a'} />
-          <Status ok={hasPhoneVoice('ta')} label="Tamil voice on phone" detail={hasPhoneVoice('ta') ? 'ta-IN' : 'missing'} />
+          {['ta', 'hi', 'te'].map((l) => (
+            <Status key={l} ok={hasPhoneVoice(l)} label={`${{ ta: 'Tamil', hi: 'Hindi', te: 'Telugu' }[l]} voice on phone`} detail={hasPhoneVoice(l) ? `${l}-IN` : 'missing'} />
+          ))}
           <Status ok={s.mode === 'cloud' && s.server.tts} label="Indic Parler-TTS (server)" detail={s.mode === 'cloud' ? (s.server.tts ? 'on' : 'not set') : 'demo'} />
         </ul>
       </Card>
+
+      <Button variant="secondary" className="w-full" onClick={() => go('#/lab')}>
+        🎯 {t('accuracy_lab')} · {en('accuracy_lab')}
+      </Button>
+
+      {s.mode === 'cloud' && <StaffCard />}
 
       {s.mode === 'cloud' ? (
         <Card>
