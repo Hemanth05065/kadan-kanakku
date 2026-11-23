@@ -1,0 +1,30 @@
+{
+  "name": "kadan-kanakku",
+  "private": true,
+  "version": "1.0.0",
+  "description": "Voice-first credit ledger for kirana shops in Tamil Nadu",
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host",
+    "build": "vite build",
+    "preview": "vite preview --host",
+    "test": "vitest run",
+    "icons": "node scripts/make-icons.mjs"
+  },
+  "dependencies": {
+    "@huggingface/transformers": "^4.3.2",
+    "@supabase/supabase-js": "^2.119.2",
+    "idb": "^8.0.4",
+    "react": "^19.3.1",
+    "react-dom": "^19.3.1"
+  },
+  "devDependencies": {
+    "@electric-sql/pglite": "^0.5.17",
+    "@tailwindcss/vite": "^4.3.5",
+    "@vitejs/plugin-react": "^6.3.0",
+    "tailwindcss": "^4.3.5",
+    "vite": "^8.3.8",
+    "vite-plugin-pwa": "^2.0.0",
+    "vitest": "^5.1.1"
+  }
+}

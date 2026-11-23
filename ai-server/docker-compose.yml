@@ -1,0 +1,51 @@
+# Self-hosted, open-source AI backend for Kadan Kanakku.
+#
+#   whisper  – speaches (faster-whisper), OpenAI-compatible speech-to-text   -> :8000/v1
+#   ollama   – open-weight LLM (Qwen 2.5 by default), OpenAI-compatible chat -> :11434/v1
+#   tts      – optional: AI4Bharat Indic Parler-TTS behind /v1/audio/speech -> :8001/v1
+#
+#   docker compose up -d                 # speech + LLM
+#   docker compose --profile tts up -d   # also the Tamil server voice (GPU strongly recommended)
+#
+# GPU: switch the whisper image to ghcr.io/speaches-ai/speaches:latest-cuda and add
+#   deploy.resources.reservations.devices for both whisper and ollama.
+
+services:
+  whisper:
+    image: ghcr.io/speaches-ai/speaches:latest-cpu
+    ports:
+      - "8000:8000"
+    restart: unless-stopped
+
+  ollama:
+    image: ollama/ollama:latest
+    ports:
+      - "11434:11434"
+    volumes:
+      - ollama:/root/.ollama
+    restart: unless-stopped
+
+  # One-shot: download the LLM weights into the ollama volume.
+  ollama-pull:
+    image: ollama/ollama:latest
+    depends_on:
+      - ollama
+    environment:
+      - OLLAMA_HOST=http://ollama:11434
+    entrypoint: ["/bin/sh", "-c", "sleep 5 && ollama pull ${LLM_MODEL:-qwen2.5:7b-instruct}"]
+    restart: "no"
+
+  tts:
+    build: ./tts
+    profiles: ["tts"]
+    ports:
+      - "8001:8001"
+    environment:
+      - HF_TOKEN=${HF_TOKEN:-}
+    volumes:
+      - hf-cache:/root/.cache/huggingface
+    restart: unless-stopped
+
+volumes:
+  ollama:
+  hf-cache:

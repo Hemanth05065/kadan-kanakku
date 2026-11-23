@@ -1,0 +1,24 @@
+# Minimal local-development config for `supabase start`.
+# Run `supabase init` first if you want the full default file; these keys override it.
+project_id = "kadan-kanakku"
+
+[auth]
+site_url = "http://localhost:5173"
+additional_redirect_urls = ["http://localhost:4173"]
+
+[auth.sms]
+enable_signup = true
+enable_confirmations = true
+
+# Local dev only: this phone number always accepts OTP 123456 (no SMS is sent).
+[auth.sms.test_otp]
+919999999999 = "123456"
+
+[functions.transcribe]
+verify_jwt = true
+
+[functions.understand]
+verify_jwt = true
+
+[functions.speak]
+verify_jwt = true
