@@ -1,19 +1,23 @@
-// IndexedDB: the on-device copy of the ledger, audio clips and the offline outbox.
+// IndexedDB: the on-device copy of the ledger, audio clips, the offline outbox and the
+// recorded shop voice (kept across demo resets: it belongs to the device, not the ledger).
 import { openDB } from 'idb';
 
 let dbp = null;
 
 export function db() {
   if (!dbp) {
-    dbp = openDB('kadan-kanakku', 1, {
-      upgrade(d) {
-        d.createObjectStore('customers', { keyPath: 'id' });
-        d.createObjectStore('aliases', { keyPath: 'id' });
-        const e = d.createObjectStore('entries', { keyPath: 'id' });
-        e.createIndex('customer_id', 'customer_id');
-        d.createObjectStore('audio', { keyPath: 'id' }); // { id: entryId, blob, mime }
-        d.createObjectStore('outbox', { keyPath: 'seq', autoIncrement: true });
-        d.createObjectStore('meta', { keyPath: 'key' });
+    dbp = openDB('kadan-kanakku', 2, {
+      upgrade(d, oldVersion) {
+        if (oldVersion < 1) {
+          d.createObjectStore('customers', { keyPath: 'id' });
+          d.createObjectStore('aliases', { keyPath: 'id' });
+          const e = d.createObjectStore('entries', { keyPath: 'id' });
+          e.createIndex('customer_id', 'customer_id');
+          d.createObjectStore('audio', { keyPath: 'id' }); // { id: entryId, blob, mime }
+          d.createObjectStore('outbox', { keyPath: 'seq', autoIncrement: true });
+          d.createObjectStore('meta', { keyPath: 'key' });
+        }
+        if (oldVersion < 2) d.createObjectStore('voice', { keyPath: 'key' }); // { key, wav, ms, rate, at }
       },
     });
   }

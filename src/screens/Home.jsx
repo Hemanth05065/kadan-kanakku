@@ -1,8 +1,11 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { BiLabel, Money, SyncBadge, Empty, useT } from '../components/ui.jsx';
-import { MicButton, LevelBar, VoicePanel } from '../components/MicPanel.jsx';
+import { MicButton, LevelBar, VoicePanel, HandsFreeButton, HandsFreeToggle } from '../components/MicPanel.jsx';
 import { EntryRow, EntryEditor, ReviewCard } from '../components/entries.jsx';
-import { useStore, useLedger, updateEntry, addAlias, resetDemo } from '../lib/store.js';
+import { useStore, useLedger, updateEntry, updateCustomer, addAlias, resetDemo } from '../lib/store.js';
+import { collectionList } from '../lib/collect.js';
+import { reminderLink } from '../lib/whatsapp.js';
+import { money } from '../lib/util.js';
 import { DEMO_SCRIPT } from '../voice/demoScript.js';
 
 function Stat({ k, value, tone }) {
@@ -14,10 +17,52 @@ function Stat({ k, value, tone }) {
   );
 }
 
+/** Who to ask for money today, why, and a one-tap WhatsApp reminder for each. */
+function CollectCard({ flow, go }) {
+  const s = useStore();
+  const { t, lang } = useT();
+  const list = useMemo(() => collectionList(s.customers, s.entries, new Date(), { limit: 4 }), [s.customers, s.entries]);
+  if (!list.length) return null;
+  const reason = (r) => t(r.k).replace('{n}', r.k === 'r_still_buying' ? money(r.n) : r.n);
+  return (
+    <section className="space-y-2 rounded-2xl bg-amber-50 p-3 shadow-sm ring-1 ring-amber-400/50">
+      <div className="flex items-center justify-between">
+        <h2 className="font-bold text-amber-900"><BiLabel k="collect_today" /></h2>
+        <button type="button" onClick={flow.speakCollect} aria-label="Read the list aloud" className="min-h-11 rounded-full bg-white px-4 text-lg shadow-sm ring-1 ring-amber-400/50">
+          🔊
+        </button>
+      </div>
+      <ul className="space-y-2">
+        {list.map((c) => (
+          <li key={c.id} className="flex items-center gap-2 rounded-xl bg-white p-2 pl-3 shadow-sm">
+            <button type="button" onClick={() => go(`#/customer/${c.id}`)} className="min-w-0 flex-1 text-left">
+              <span className="flex items-baseline justify-between gap-2">
+                <span className="truncate font-semibold">{c.name}{c.honorific ? ` ${c.honorific}` : ''}</span>
+                <Money value={c.balance} className="shrink-0 font-bold text-red-800" />
+              </span>
+              <span className="block text-xs leading-snug text-stone-600">{c.reasons.map(reason).join(' · ')}</span>
+            </button>
+            <a
+              href={reminderLink(c, c.balance, s.shop?.name || 'our shop', lang)}
+              target="_blank"
+              rel="noopener noreferrer"
+              onClick={() => updateCustomer(c.id, { last_reminded_at: new Date().toISOString() })}
+              aria-label={`WhatsApp reminder to ${c.name}`}
+              className="flex h-12 w-12 shrink-0 items-center justify-center rounded-full bg-[#25D366] text-xl text-white shadow-sm"
+            >
+              💬
+            </a>
+          </li>
+        ))}
+      </ul>
+    </section>
+  );
+}
+
 export default function Home({ flow, go }) {
   const s = useStore();
   const L = useLedger();
-  const { t } = useT();
+  const { t, en } = useT();
   const [review, setReview] = useState(null); // { initial, entry }
   const { ui } = flow;
 
@@ -32,6 +77,10 @@ export default function Home({ flow, go }) {
   }, [flow.pressStart, flow.pressEnd]); // eslint-disable-line react-hooks/exhaustive-deps
 
   const idleView = ui.phase === 'idle' && !ui.reply && !ui.heard;
+  const hf = ui.handsFree;
+
+  // Hands-free listens only on this screen, where its replies and Undo button are visible.
+  useEffect(() => () => flow.stopHandsFree(), []); // eslint-disable-line react-hooks/exhaustive-deps
 
   return (
     <div className="mx-auto flex h-[calc(100dvh-4.75rem)] max-w-lg flex-col">
@@ -85,6 +134,8 @@ export default function Home({ flow, go }) {
           </button>
         </div>
 
+        <CollectCard flow={flow} go={go} />
+
         {L.review.length > 0 && (
           <section className="space-y-2">
             <h2 className="flex items-center gap-2 font-bold text-amber-900">
@@ -118,10 +169,31 @@ export default function Home({ flow, go }) {
           <VoicePanel flow={flow} />
         </div>
         <div className="flex flex-col items-center gap-2">
-          <LevelBar level={ui.level} active={ui.phase === 'recording'} />
-          <MicButton phase={ui.phase} onStart={flow.pressStart} onEnd={flow.pressEnd} />
-          {idleView && <BiLabel k="hold_to_talk" className="items-center text-base font-semibold text-leaf-900" />}
-          {ui.phase === 'recording' && <BiLabel k="release_to_send" className="items-center text-base font-semibold text-red-700" />}
+          <LevelBar level={ui.level} active={ui.phase === 'recording' || Boolean(hf)} />
+          <div className="grid w-full grid-cols-[1fr_auto_1fr] items-center">
+            <span />
+            {hf ? (
+              <HandsFreeButton phase={ui.phase} level={ui.level} onStop={() => flow.stopHandsFree()} />
+            ) : (
+              <MicButton phase={ui.phase} onStart={flow.pressStart} onEnd={flow.pressEnd} />
+            )}
+            <div className="flex justify-center">
+              {!hf && !ui.demo && ui.phase !== 'recording' && <HandsFreeToggle onStart={flow.startHandsFree} />}
+            </div>
+          </div>
+          {hf ? (
+            ui.phase !== 'recording' && (
+              <p className="text-center text-sm text-stone-600">
+                <span className="block text-base font-semibold text-leaf-900">{t('hf_listening')}</span>
+                {t('hf_tap_stop')} · <span className="text-xs">{en(hf.detector === 'silero' ? 'hf_ai_detector' : 'hf_basic_detector')}</span>
+              </p>
+            )
+          ) : (
+            <>
+              {idleView && <BiLabel k="hold_to_talk" className="items-center text-base font-semibold text-leaf-900" />}
+              {ui.phase === 'recording' && <BiLabel k="release_to_send" className="items-center text-base font-semibold text-red-700" />}
+            </>
+          )}
         </div>
       </div>
 

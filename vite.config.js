@@ -29,8 +29,8 @@ export default defineConfig({
       },
       workbox: {
         globPatterns: ['**/*.{js,css,html,svg,png,woff2}'],
-        // The on-device Whisper worker bundle is large; it is cached on first use instead.
-        globIgnores: ['**/whisper.worker*.js', '**/*.wasm'],
+        // The on-device AI worker bundles are large; they are cached on first use instead.
+        globIgnores: ['**/whisper.worker*.js', '**/swanada.worker*.js', '**/vad.worker*.js', '**/*.wasm'],
         navigateFallback: '/index.html',
         // Never cache Supabase API / function calls; the app has its own offline queue.
         navigateFallbackDenylist: [/^\/functions\//, /^\/rest\//, /^\/auth\//, /^\/storage\//],
@@ -38,7 +38,7 @@ export default defineConfig({
           {
             // On-device AI: worker bundle + ONNX Runtime WebAssembly, so offline speech keeps working.
             urlPattern: ({ url }) =>
-              /whisper\.worker.*\.js$/.test(url.pathname) || /\.wasm$/.test(url.pathname) ||
+              /(whisper|swanada|vad)\.worker.*\.js$/.test(url.pathname) || /\.wasm$/.test(url.pathname) ||
               (url.hostname === 'cdn.jsdelivr.net' && /onnxruntime-web|@huggingface\/transformers/.test(url.pathname)),
             handler: 'CacheFirst',
             options: {
@@ -51,7 +51,12 @@ export default defineConfig({
       },
     }),
   ],
-  worker: { format: 'es' },
+  worker: {
+    format: 'es',
+    // Swanada can also run under Node; that branch never runs in the browser (the worker hands
+    // it ONNX Runtime Web), so its Node runtime is left out of the bundle.
+    rollupOptions: { external: ['onnxruntime-node'] },
+  },
   test: {
     environment: 'node',
     include: ['src/**/*.test.js', 'supabase/tests/**/*.test.js'],

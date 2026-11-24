@@ -3,7 +3,7 @@
 // Only erasable TypeScript syntax: Deno type-checks it, Node (type stripping) loads it as-is.
 
 export const INTENTS = [
-  "credit", "payment", "query_balance", "query_top", "query_today", "add_customer",
+  "credit", "payment", "query_balance", "query_top", "query_today", "query_collect", "add_customer",
   "undo_last", "confirm_yes", "confirm_no", "unclear",
 ];
 
@@ -36,6 +36,7 @@ Fields:
   query_balance = how much one customer owes (evlo baaki?, how much pending, kitna baaki, entha baaki)
   query_top = who owes the most / pending list
   query_today = today's totals (indru kanakku evlo, today's summary, aaj ka hisaab, ee roju lekka)
+  query_collect = who to collect money from today (indru yaar kitta vasool pannanum?, who should I collect from, aaj kisse vasooli, ee roju evari daggara vasool)
   add_customer = explicitly add a new customer (pudhu customer ... sethu, add customer ..., naya grahak)
   undo_last = cancel the last saved entry (last-a pottadha cancel pannu, azhichidu, undo, hatao)
   confirm_yes / confirm_no = a bare yes or no (aamaa, sari, seri, yes, haan, avunu / venaam, illa, no, nahi, vaddu)

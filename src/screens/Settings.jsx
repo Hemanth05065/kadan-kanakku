@@ -3,7 +3,9 @@ import { BiLabel, Button, useT } from '../components/ui.jsx';
 import { useStore, setSettings, resetDemo } from '../lib/store.js';
 import { syncNow } from '../lib/sync.js';
 import { signOut, createInvite, listMembers } from '../lib/auth.js';
-import { speak, hasPhoneVoice } from '../voice/tts.js';
+import { speak, voicePlanFor } from '../voice/tts.js';
+import { useVoiceClips, packProgress } from '../voice/voiceClips.js';
+import { nameClipKey } from '../voice/voicePack.js';
 import { reply } from '../i18n/index.js';
 import { DEVICE_MODELS, loadDeviceModel, unloadDeviceModel, useWhisperStatus } from '../voice/localWhisper.js';
 
@@ -57,7 +59,7 @@ function OnDeviceAI() {
       <div>
         <h2 className="text-lg font-bold">🧠 On-device AI · போனிலேயே AI</h2>
         <p className="text-sm text-leaf-100">
-          Open-source Whisper runs inside this phone, so voice entries work with no internet. Downloaded once, then cached.
+          Open-source speech recognition runs inside this phone, so voice entries work with no internet. Downloaded once, then cached. The two marked “Tamil-trained” learned from Tamil speech; general Whisper is rougher on Tamil.
         </p>
       </div>
       <div className="space-y-2">
@@ -72,6 +74,7 @@ function OnDeviceAI() {
             >
               <span>
                 <span className="font-semibold">{m.label}</span>
+                {m.tamil && <span className="ml-2 rounded-full bg-amber-400 px-2 py-0.5 text-[0.65rem] font-bold uppercase text-ink">Tamil-trained</span>}
                 <span className="block text-xs opacity-80">{m.note}</span>
               </span>
               <span className="text-sm font-mono">{m.sizeMb} MB</span>
@@ -100,6 +103,43 @@ function OnDeviceAI() {
   );
 }
 
+
+/** The recorded shop voice: progress, on/off and the way into the studio. */
+function ShopVoiceCard({ go }) {
+  const s = useStore();
+  const { t, en } = useT();
+  const { has } = useVoiceClips();
+  const prog = packProgress('ta');
+  const customers = s.customers.filter((c) => !c.deleted_at);
+  const names = customers.filter((c) => has(nameClipKey(c))).length;
+  const on = s.settings.shopVoice !== false;
+  return (
+    <section className="space-y-3 rounded-2xl bg-white p-4 shadow-sm ring-2 ring-amber-400">
+      <div>
+        <h2 className="text-lg font-bold text-leaf-900">🎙 <BiLabel k="shop_voice" /></h2>
+        <p className="text-sm text-stone-600">
+          Replies in a real person's voice (yours, or anyone at the shop) instead of a robot voice. Record once; works offline.
+        </p>
+      </div>
+      <div className="h-2 overflow-hidden rounded-full bg-stone-200">
+        <div className="h-full bg-amber-500" style={{ width: `${Math.round((prog.done / prog.total) * 100)}%` }} />
+      </div>
+      <p className="text-sm text-stone-700">
+        Tamil: {prog.done} / {prog.total} {en('recorded')} · {en('names')} {names}/{customers.length}
+        {prog.ready && <b className="ml-2 text-leaf-700">✓ Ready</b>}
+      </p>
+      <Button className="w-full" onClick={() => go('#/voice')}>
+        🎙 {prog.started ? 'Continue recording' : 'Record the shop voice'}
+      </Button>
+      {prog.started && (
+        <label className="flex min-h-12 items-center justify-between gap-3">
+          <span className="text-sm font-semibold">Speak in the shop voice</span>
+          <input type="checkbox" className="h-6 w-6 accent-leaf-800" checked={on} onChange={(e) => setSettings({ shopVoice: e.target.checked })} />
+        </label>
+      )}
+    </section>
+  );
+}
 
 /** Owner invites staff with a 6-digit code; staff sign in with their own phone and type it. */
 function StaffCard() {
@@ -175,12 +215,15 @@ export default function Settings({ go }) {
 
       <OnDeviceAI />
 
+      <ShopVoiceCard go={go} />
+
       <Card>
         <Choice k="ui_language" value={st.uiLang} onChange={(v) => setSettings({ uiLang: v })} options={[['ta', 'tamil'], ['en', 'english'], ['hi', 'hindi'], ['te', 'telugu']]} />
         <Choice k="speech_language" value={st.speechLang} onChange={(v) => setSettings({ speechLang: v })} options={[['ta-IN', 'tamil'], ['en-IN', 'english'], ['hi-IN', 'hindi'], ['te-IN', 'telugu']]} />
         <Choice k="reply_language" value={st.replyLang} onChange={(v) => setSettings({ replyLang: v })} options={[['auto', 'auto'], ['ta', 'tamil'], ['en', 'english'], ['hi', 'hindi'], ['te', 'telugu']]} />
         <Choice k="voice_output" value={st.voice} onChange={(v) => setSettings({ voice: v })} options={[['auto', 'auto'], ['phone', 'phone_voice'], ['server', 'server_voice']]} />
-        <Button variant="secondary" className="w-full" onClick={() => { const l = ['ta', 'en', 'hi', 'te'].includes(st.replyLang) ? st.replyLang : (st.speechLang || 'ta-IN').slice(0, 2); speak(reply('credit_saved', l, { name: 'Murugan anna', nameSay: l === 'ta' ? 'முருகன் அண்ணா' : 'Murugan anna', amt: '240', amtSay: '240', total: '1,140', totalSay: '1140' })); }}>
+        <Choice k="hf_wait" value={st.handsFreeWait || 'normal'} onChange={(v) => setSettings({ handsFreeWait: v })} options={[['short', 'wait_short'], ['normal', 'wait_normal'], ['long', 'wait_long']]} />
+        <Button variant="secondary" className="w-full" onClick={() => { const l = ['ta', 'en', 'hi', 'te'].includes(st.replyLang) ? st.replyLang : (st.speechLang || 'ta-IN').slice(0, 2); speak(reply('credit_saved', l, { name: 'Murugan anna', nameSay: l === 'ta' ? 'முருகன் அண்ணா' : 'Murugan anna', nameKey: 'murugan anna', amt: '240', amtSay: '240', amtN: 240, total: '1,140', totalSay: '1140', totalN: 1140 })); }}>
           🔊 {t('test_voice')} · {en('test_voice')}
         </Button>
       </Card>
@@ -192,9 +235,17 @@ export default function Settings({ go }) {
           <Status ok={w.state === 'ready'} label="Whisper (on this phone)" detail={w.state} />
           <Status ok label="Tamil grammar parser (on this phone)" detail="always" />
           <Status ok={browserSR} label="Browser speech recognition" detail={browserSR ? 'fallback' : 'n/a'} />
-          {['ta', 'hi', 'te'].map((l) => (
-            <Status key={l} ok={hasPhoneVoice(l)} label={`${{ ta: 'Tamil', hi: 'Hindi', te: 'Telugu' }[l]} voice on phone`} detail={hasPhoneVoice(l) ? `${l}-IN` : 'missing'} />
-          ))}
+          {['ta', 'hi', 'te'].map((l) => {
+            const v = voicePlanFor(l);
+            return (
+              <Status
+                key={l}
+                ok={v.kind === 'phone'}
+                label={`${{ ta: 'Tamil', hi: 'Hindi', te: 'Telugu' }[l]} voice on phone`}
+                detail={v.kind === 'phone' ? v.name : v.kind === 'indian-english' ? 'Indian English reads it' : 'missing: text only'}
+              />
+            );
+          })}
           <Status ok={s.mode === 'cloud' && s.server.tts} label="Indic Parler-TTS (server)" detail={s.mode === 'cloud' ? (s.server.tts ? 'on' : 'not set') : 'demo'} />
         </ul>
       </Card>
