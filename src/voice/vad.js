@@ -134,6 +134,7 @@ export function handsFreeShouldAct(parse, { engaged = false, justSaved = false }
       return named;
     case 'query_top':
     case 'query_today':
+    case 'query_collect':
       return true;
     case 'undo_last':
     case 'confirm_no':

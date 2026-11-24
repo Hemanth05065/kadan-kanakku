@@ -60,6 +60,7 @@ const hi = {
     hands_free: 'बिना दबाए बोलिए',
     hf_listening: 'सुन रहा हूँ, बस बोलिए',
     hf_tap_stop: 'रोकने के लिए छुएँ',
+    collect_today: 'आज वसूली',
   },
 
   replies: {
@@ -70,6 +71,8 @@ const hi = {
     advance: (p) => ({ show: `${p.name} ne ${p.total} advance diye hain.`, say: `${p.nameSay} ने ${p.totalSay} एडवांस दिए हैं।` }),
     top: (p) => ({ show: `Sabse zyada baaki: ${p.list}.`, say: `सबसे ज़्यादा बाकी: ${p.listSay}।` }),
     top_none: () => ({ show: 'Kisi ka baaki nahi.', say: 'किसी का बाकी नहीं।' }),
+    collect_list: (p) => ({ show: `Aaj vasooli: ${p.list}.`, say: `आज वसूली: ${p.listSay}।` }),
+    collect_none: () => ({ show: 'Aaj kisi se vasooli nahi.', say: 'आज किसी से वसूली नहीं।' }),
     today_summary: (p) => ({
       show: `Aaj ${p.credit} udhaar, ${p.payment} jama. Kul baaki ${p.total}.`,
       say: `आज ${p.creditSay} उधार, ${p.paymentSay} जमा। कुल बाकी ${p.totalSay}।`,
@@ -102,6 +105,7 @@ const hi = {
     query: ['kitna', 'kitne', 'kitni', 'baaki', 'bakaya', 'hisaab', 'hisab', 'कितना', 'कितने', 'बाकी', 'बकाया', 'हिसाब'],
     top: ['kaun', 'kisne', 'sabse', 'zyada', 'jyada', 'कौन', 'सबसे', 'ज़्यादा'],
     today: ['aaj', 'आज'],
+    collect: ['vasooli', 'vasuli', 'wasooli', 'vasool', 'वसूली', 'वसूल'],
     undo: ['hatao', 'hata', 'mitao', 'mita', 'galti', 'kaato', 'हटाओ', 'मिटाओ', 'गलती'],
     add: ['naya', 'nayi', 'naye', 'jodo', 'नया', 'जोड़ो'],
     yes: ['haan', 'ha', 'haanji', 'theek', 'thik', 'sahi', 'bilkul', 'हाँ', 'हां', 'ठीक', 'सही'],

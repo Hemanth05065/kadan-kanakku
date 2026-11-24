@@ -60,6 +60,7 @@ const te = {
     hands_free: 'నొక్కకుండా మాట్లాడండి',
     hf_listening: 'వింటున్నాను, మాట్లాడండి',
     hf_tap_stop: 'ఆపడానికి తాకండి',
+    collect_today: 'ఈ రోజు వసూలు',
   },
 
   replies: {
@@ -70,6 +71,8 @@ const te = {
     advance: (p) => ({ show: `${p.name} ${p.total} advance ichcharu.`, say: `${p.nameSay} ${p.totalSay} అడ్వాన్స్ ఇచ్చారు.` }),
     top: (p) => ({ show: `Ekkuva baaki: ${p.list}.`, say: `ఎక్కువ బాకీ: ${p.listSay}.` }),
     top_none: () => ({ show: 'Evvarikee baaki ledu.', say: 'ఎవ్వరికీ బాకీ లేదు.' }),
+    collect_list: (p) => ({ show: `Ee roju vasool: ${p.list}.`, say: `ఈ రోజు వసూలు: ${p.listSay}.` }),
+    collect_none: () => ({ show: 'Ee roju vasool cheyyalsindi ledu.', say: 'ఈ రోజు వసూలు చేయాల్సింది లేదు.' }),
     today_summary: (p) => ({
       show: `Ee roju ${p.credit} appu, ${p.payment} vachindi. Motham baaki ${p.total}.`,
       say: `ఈ రోజు ${p.creditSay} అప్పు, ${p.paymentSay} వచ్చింది. మొత్తం బాకీ ${p.totalSay}.`,
@@ -102,6 +105,7 @@ const te = {
     query: ['entha', 'enta', 'baaki', 'ivvali', 'lekka', 'ఎంత', 'బాకీ', 'ఇవ్వాలి', 'లెక్క'],
     top: ['evaru', 'evvaru', 'ekkuva', 'ఎవరు', 'ఎక్కువ'],
     today: ['eeroju', 'roju', 'nedu', 'ఈరోజు', 'రోజు', 'నేడు'],
+    collect: ['vasool', 'vasoolu', 'vasulu', 'వసూలు', 'వసూల్'],
     undo: ['teesey', 'teeseyi', 'tappu', 'తీసేయ్', 'తప్పు'],
     add: ['kotha', 'kottha', 'కొత్త'],
     yes: ['avunu', 'sare', 'saree', 'అవును', 'సరే'],

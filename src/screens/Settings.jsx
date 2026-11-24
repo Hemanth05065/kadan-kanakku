@@ -59,7 +59,7 @@ function OnDeviceAI() {
       <div>
         <h2 className="text-lg font-bold">🧠 On-device AI · போனிலேயே AI</h2>
         <p className="text-sm text-leaf-100">
-          Open-source Whisper runs inside this phone, so voice entries work with no internet. Downloaded once, then cached.
+          Open-source speech recognition runs inside this phone, so voice entries work with no internet. Downloaded once, then cached. The two marked “Tamil-trained” learned from Tamil speech; general Whisper is rougher on Tamil.
         </p>
       </div>
       <div className="space-y-2">
@@ -74,6 +74,7 @@ function OnDeviceAI() {
             >
               <span>
                 <span className="font-semibold">{m.label}</span>
+                {m.tamil && <span className="ml-2 rounded-full bg-amber-400 px-2 py-0.5 text-[0.65rem] font-bold uppercase text-ink">Tamil-trained</span>}
                 <span className="block text-xs opacity-80">{m.note}</span>
               </span>
               <span className="text-sm font-mono">{m.sizeMb} MB</span>

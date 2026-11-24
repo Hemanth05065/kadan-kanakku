@@ -13,6 +13,7 @@ import { LIMITS } from '../lib/config.js';
 import { reply, PACKS } from '../i18n/index.js';
 import { resolveName, buildNameIndex, displayName, tamilName, nativeNameFor } from '../lib/names.js';
 import { balanceOf, balances, todayStats, totalPending } from '../lib/ledger.js';
+import { collectionList } from '../lib/collect.js';
 import { fmt, sayNum } from '../lib/util.js';
 import { skeleton } from '../lib/translit.js';
 import { tokenize } from '../lib/numbers.js';
@@ -199,6 +200,17 @@ function topAnswer(ctx, lang) {
   });
 }
 
+/** "Indru vasool: Selvi akka 2,150, Murugesan 380." Who to ask for money today (see lib/collect.js). */
+export function collectAnswer(ctx, lang, now = new Date()) {
+  const list = collectionList(ctx.customers, ctx.entries, now, { limit: 3 });
+  if (!list.length) return answer('collect_none', lang);
+  return answer('collect_list', lang, {
+    list: list.map((c) => `${label(c)} ${fmt(c.balance)}`).join(', '),
+    listSay: list.map((c) => `${sayName(c, lang)} ${sayNum(c.balance)}`).join(', '),
+    items: list.map((c) => ({ nameKey: nameKeyOf(c), n: c.balance })),
+  });
+}
+
 /** "Indru 3,340 kadan, 100 varavu. Mottham baaki 8,400." */
 export function todayAnswer(ctx, lang) {
   const s = todayStats(ctx.entries);
@@ -215,7 +227,7 @@ function isFreshCommand(parse) {
   const named = Boolean(parse.customer_name || parse.customer_id);
   if (['credit', 'payment'].includes(parse.intent)) return named && parse.amount != null;
   if (parse.intent === 'query_balance' || parse.intent === 'add_customer') return named;
-  return parse.intent === 'query_top' || parse.intent === 'query_today';
+  return parse.intent === 'query_top' || parse.intent === 'query_today' || parse.intent === 'query_collect';
 }
 
 function ordinal(parse) {
@@ -351,6 +363,8 @@ export function decide(parse, convo, ctx) {
       return topAnswer(ctx, lang);
     case 'query_today':
       return todayAnswer(ctx, lang);
+    case 'query_collect':
+      return collectAnswer(ctx, lang);
     case 'undo_last': {
       const e = ctx.lastUndoable();
       return e ? { kind: 'undo', entryId: e.id, reply: r('undo_done', lang), convo: { ...EMPTY_CONVO } } : answer('nothing_to_undo', lang);

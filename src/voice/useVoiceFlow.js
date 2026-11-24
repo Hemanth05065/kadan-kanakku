@@ -10,7 +10,7 @@ import { chime } from './voiceClips.js';
 import { HandsFree } from './handsFree.js';
 import { handsFreeShouldAct } from './vad.js';
 import { analyse, encodeWav } from './audio.js';
-import { decide, afterCustomerAdded, fail, todayAnswer, EMPTY_CONVO } from './decide.js';
+import { decide, afterCustomerAdded, fail, todayAnswer, collectAnswer, EMPTY_CONVO } from './decide.js';
 import { reply, PACKS } from '../i18n/index.js';
 import { LIMITS } from '../lib/config.js';
 import { getState, addEntry, updateEntry, removeEntry, addCustomer, addAlias, lastUndoable } from '../lib/store.js';
@@ -469,6 +469,14 @@ export function useVoiceFlow() {
     await run(todayAnswer(ctxNow(), lang), null);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /** Read out who to collect from today ("Indru vasool: Selvi akka 2,150, …"). */
+  const speakCollect = useCallback(async () => {
+    stopSpeaking();
+    const st = getState().settings;
+    const lang = PACKS[st.replyLang] ? st.replyLang : st.uiLang || 'ta';
+    await run(collectAnswer(ctxNow(), lang), null);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   /**
    * Demo autopilot: plays a scripted counter conversation through the real pipeline
    * (understanding, decisions, spoken replies, saves). Typed out like live captions.
@@ -555,6 +563,7 @@ export function useVoiceFlow() {
     completeManual,
     dismiss,
     speakSummary,
+    speakCollect,
     runDemo,
     stopDemo,
     startHandsFree,

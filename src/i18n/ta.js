@@ -147,6 +147,11 @@ const ta = {
     wait_long: 'அதிகம்',
     hf_ai_detector: 'AI குரல் கண்டுபிடிப்பு',
     hf_basic_detector: 'சாதாரண கண்டுபிடிப்பு',
+    collect_today: 'இன்று வசூல்',
+    r_no_payment: '{n} நாளா பணம் வரல',
+    r_never_paid: 'இதுவரை கட்டல, {n} நாள் ஆச்சு',
+    r_still_buying: 'இந்த வாரமும் {n} கடன் வாங்கினார்',
+    r_reminded: '{n} நாள் முன்னாடி நினைவூட்டினோம்',
   },
 
   // Each reply has `show` (Tanglish, shown on screen) and `say` (Tamil script, for the voice).
@@ -177,6 +182,8 @@ const ta = {
       say: `அதிக பாக்கி: ${p.listSay}.`,
     }),
     top_none: () => ({ show: 'Yaarukkum baaki illa.', say: 'யாருக்கும் பாக்கி இல்லை.' }),
+    collect_list: (p) => ({ show: `Indru vasool: ${p.list}.`, say: `இன்னைக்கு வசூல்: ${p.listSay}.` }),
+    collect_none: () => ({ show: 'Indru vasool panna yaarum illa.', say: 'இன்னைக்கு வசூல் பண்ண யாரும் இல்லை.' }),
     today_summary: (p) => ({
       show: `Indru ${p.credit} kadan, ${p.payment} varavu. Mottham baaki ${p.total}.`,
       say: `இன்று ${p.creditSay} கடன், ${p.paymentSay} வரவு. மொத்தம் பாக்கி ${p.totalSay}.`,
@@ -251,6 +258,7 @@ const ta = {
     ],
     top: ['yaaru', 'yaar', 'yaarellam', 'adhigam', 'athigam', 'ellaarum', 'யாரு', 'யார்', 'அதிகம்'],
     today: ['indru', 'inniki', 'innaiku', 'innaikku', 'innikku', 'இன்று', 'இன்னைக்கு', 'இன்னிக்கு'],
+    collect: ['vasool', 'vasul', 'vasoolu', 'vasula', 'vasoola', 'வசூல்', 'வசூலு'],
     undo: [
       'cancel', 'azhi', 'azhichidu', 'azhichudu', 'azhichiru', 'pottadha', 'pottadhu', 'pottatha', 'kadaisi',
       'thappa', 'கேன்சல்', 'அழி', 'அழிச்சிடு', 'போட்டதை', 'போட்டத',
@@ -275,7 +283,8 @@ const ta = {
       'um', 'oda', 'kku', 'ukku', 'kitta', 'ta', 'la', 'le', 'ah', 'aa', 'enna', 'pannu', 'pannunga', 'pannitu',
       'panniru', 'ponga', 'vandhu', 'vanthu', 'ippo', 'konjam', 'saaman', 'saamaan', 'sollu',
       'sollunga', 'last', 'customer', 'kustamar', 'kaasu', 'panam', 'irukku', 'kudu', 'ku', 'nu', 'ella', 'vandhaar',
-      'ennoda', 'avan', 'aval', 'avar', 'avanga', 'naalaiku', 'peru', 'per',
+      'ennoda', 'avan', 'aval', 'avar', 'avanga', 'naalaiku', 'peru', 'per', 'pannanum', 'pannalaam', 'pannalam',
+      'aachu', 'aayiduchu', 'aagiduchu',
       'பண்ணு', 'வந்து', 'இப்போ', 'கொஞ்சம்', 'சாமான்', 'காசு', 'பணம்', 'கஸ்டமர்',
     ],
     items: [

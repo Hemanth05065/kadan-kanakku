@@ -145,6 +145,11 @@ const en = {
     wait_long: 'Long',
     hf_ai_detector: 'AI voice detector',
     hf_basic_detector: 'Basic detector',
+    collect_today: 'Collect today',
+    r_no_payment: 'No payment for {n} days',
+    r_never_paid: 'Never paid, first credit {n} days ago',
+    r_still_buying: 'Took {n} more on credit this week',
+    r_reminded: 'Reminded {n} days ago',
   },
 
   replies: {
@@ -161,6 +166,8 @@ const en = {
     advance: (p) => ({ show: `${p.name} has paid ${p.total} in advance.`, say: `${p.nameSay} has paid ${p.totalSay} in advance.` }),
     top: (p) => ({ show: `Highest pending: ${p.list}.`, say: `Highest pending: ${p.listSay}.` }),
     top_none: () => ({ show: 'Nobody owes anything.', say: 'Nobody owes anything.' }),
+    collect_list: (p) => ({ show: `Collect today: ${p.list}.`, say: `Collect today: ${p.listSay}.` }),
+    collect_none: () => ({ show: 'Nobody to collect from today.', say: 'Nobody to collect from today.' }),
     today_summary: (p) => ({
       show: `Today ${p.credit} credit, ${p.payment} received. Total pending ${p.total}.`,
       say: `Today ${p.creditSay} credit, ${p.paymentSay} received. Total pending ${p.totalSay}.`,
@@ -202,6 +209,7 @@ const en = {
     query: ['balance', 'pending', 'owe', 'owes', 'due', 'dues', 'how', 'much', 'outstanding', 'total', 'summary', 'report'],
     top: ['who', 'top', 'most', 'highest', 'list', 'everyone'],
     today: ['today', 'todays', 'tonight'],
+    collect: ['collect', 'collection', 'chase', 'recover', 'recovery'],
     undo: ['undo', 'cancel', 'delete', 'remove', 'mistake', 'erase', 'previous'],
     add: ['new', 'add', 'create'],
     yes: ['yes', 'yeah', 'yep', 'ok', 'okay', 'correct', 'right', 'sure', 'confirm', 'save', 'done'],
@@ -218,6 +226,7 @@ const en = {
       'he', 'she', 'they', 'has', 'have', 'his', 'her', 'does', 'do', 'customer', 'account', 'items', 'worth', 'in',
       'at', 'it', 'that', 'this', 'me', 'my', 'last', 'entry', 'name', 'shop', 'kadai', 'amount', 'what', 'tell',
       'also', 'more', 'only', 'just', 'entries', 'bill', 'money', 'cash', 'him', 'them', 'their', 'back',
+      'should', 'shall', 'must', 'need', 'i', 'we',
     ],
     // Sounds, not words: never a customer name, and no vote on the language.
     interjection: ['hmm', 'hm', 'umm', 'mmm', 'uh', 'er', 'aah', 'ahh', 'ooh'],
