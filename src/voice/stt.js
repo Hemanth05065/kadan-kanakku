@@ -1,13 +1,14 @@
 // Speech-to-text router. Order of preference:
 //   1. server Whisper large-v3 (open weights; best for Tamil + code-mixing) when online
-//   2. on-device Whisper in the browser (works offline)
+//   2. on-device speech recognition in the browser (works offline): Whisper, a Tamil-trained
+//      Whisper, or Swanada
 //   3. the browser's own speech recognition (captured live during the press)
 // Returns { text, engine, ms } or null when nothing could transcribe (-> "Needs review").
 import { getState } from '../lib/store.js';
 import { pack } from '../i18n/index.js';
 import { scriptOf } from '../lib/translit.js';
 import { serverAvailable, callFunction, NotConfigured } from './server.js';
-import { whisperReady, transcribeOnDevice } from './localWhisper.js';
+import { whisperReady, transcribeOnDevice, deviceModelLabel } from './localWhisper.js';
 
 /** Customer names plus a few ledger words of the speech language, as Whisper vocabulary hints. */
 export function vocabulary() {
@@ -83,7 +84,7 @@ async function transcribeRaw({ wav, archive, pcm, live }) {
   if (whisperReady() && pcm?.length) {
     try {
       const text = await transcribeOnDevice(pcm, lang);
-      return { text, engine: 'on-device · whisper', ms: Math.round(performance.now() - t0) };
+      return { text, engine: `on-device · ${deviceModelLabel()}`, ms: Math.round(performance.now() - t0) };
     } catch (err) {
       console.warn('on-device STT failed', err);
     }

@@ -13,9 +13,11 @@ import { LIMITS } from '../lib/config.js';
 import { reply, PACKS } from '../i18n/index.js';
 import { resolveName, buildNameIndex, displayName, tamilName, nativeNameFor } from '../lib/names.js';
 import { balanceOf, balances, todayStats, totalPending } from '../lib/ledger.js';
+import { collectionList } from '../lib/collect.js';
 import { fmt, sayNum } from '../lib/util.js';
 import { skeleton } from '../lib/translit.js';
 import { tokenize } from '../lib/numbers.js';
+import { nameKeyOf } from './voicePack.js';
 
 export const EMPTY_CONVO = Object.freeze({ awaiting: null, pending: null, failures: 0 });
 
@@ -99,7 +101,7 @@ export function evaluate(p, convo, ctx) {
       const [a, b] = res.candidates;
       return ask(
         'ask_which',
-        { a: label(a), aSay: sayName(a, lang), b: label(b), bSay: sayName(b, lang) },
+        { a: label(a), aSay: sayName(a, lang), aKey: nameKeyOf(a), b: label(b), bSay: sayName(b, lang), bKey: nameKeyOf(b) },
         'choice',
         { ...p, candidates: [a.id, b.id] },
         convo,
@@ -109,7 +111,7 @@ export function evaluate(p, convo, ctx) {
       const [a] = res.candidates;
       return ask(
         'ask_is_it',
-        { a: label(a), aSay: sayName(a, lang) },
+        { a: label(a), aSay: sayName(a, lang), aKey: nameKeyOf(a) },
         'choice',
         { ...p, candidates: [a.id] },
         convo,
@@ -117,7 +119,7 @@ export function evaluate(p, convo, ctx) {
       );
     } else {
       const params = { name: spokenShow(p.customer_name), nameSay: spokenSay(p.customer_name, lang) };
-      if (p.intent === 'query_balance') return answer('no_account', lang, params);
+      if (p.intent === 'query_balance' || p.intent === 'show_pay') return answer('no_account', lang, params);
       return ask('ask_new_customer', params, 'new_customer', p, convo, YES_NO);
     }
   }
@@ -125,19 +127,29 @@ export function evaluate(p, convo, ctx) {
   const c = ctx.customers.find((x) => x.id === p.customer_id);
   if (!c) return answer('try_again', lang);
   const bal = balanceOf(ctx.entries, c.id);
-  const who = { name: label(c), nameSay: sayName(c, lang) };
+  const who = { name: label(c), nameSay: sayName(c, lang), nameKey: nameKeyOf(c) };
 
   if (p.intent === 'query_balance') {
     const key = bal > 0 ? 'balance' : bal < 0 ? 'advance' : 'balance_zero';
-    return answer(key, lang, { ...who, total: fmt(Math.abs(bal)), totalSay: sayNum(Math.abs(bal)) }, { customerId: c.id });
+    return answer(key, lang, { ...who, total: fmt(Math.abs(bal)), totalSay: sayNum(Math.abs(bal)), totalN: Math.abs(bal) }, { customerId: c.id });
   }
   if (p.intent === 'add_customer') return answer('customer_exists', lang, who, { customerId: c.id });
+
+  if (p.intent === 'show_pay') {
+    const amt = Number(p.amount) > 0 ? Number(p.amount) : bal;
+    if (!(amt > 0)) {
+      const key = bal < 0 ? 'advance' : 'balance_zero';
+      return answer(key, lang, { ...who, total: fmt(Math.abs(bal)), totalSay: sayNum(Math.abs(bal)), totalN: Math.abs(bal) }, { customerId: c.id });
+    }
+    if (!ctx.upi) return answer('upi_missing', lang);
+    return answer('pay_qr', lang, { ...who, amt: fmt(amt), amtSay: sayNum(amt), amtN: amt }, { kind: 'show_pay', customerId: c.id, amount: amt });
+  }
 
   if (!(Number(p.amount) > 0)) return ask('ask_amount', {}, 'amount', { ...p, amount: null }, convo);
 
   const amount = Number(p.amount);
   const total = bal + (p.intent === 'credit' ? amount : -amount);
-  const params = { ...who, amt: fmt(amount), amtSay: sayNum(amount), total: fmt(total), totalSay: sayNum(total) };
+  const params = { ...who, amt: fmt(amount), amtSay: sayNum(amount), amtN: amount, total: fmt(total), totalSay: sayNum(total), totalN: total };
   const unsure = (p.confidence ?? 0) < LIMITS.CONFIDENCE_OK && !p.clarified;
   if (!p.confirmed && (amount > LIMITS.LARGE_AMOUNT || unsure)) {
     return ask('confirm_amount', params, 'confirm', p, convo, YES_NO);
@@ -155,10 +167,10 @@ export function evaluate(p, convo, ctx) {
 /** After the owner agreed to add a new customer. */
 export function afterCustomerAdded(p, customer, ctx) {
   const lang = p.lang;
-  const added = r('customer_added', lang, { name: label(customer), nameSay: sayName(customer, lang) });
+  const added = r('customer_added', lang, { name: label(customer), nameSay: sayName(customer, lang), nameKey: nameKeyOf(customer) });
   if (!['credit', 'payment', 'query_balance'].includes(p.intent)) return { kind: 'answer', reply: added, convo: { ...EMPTY_CONVO } };
   const next = evaluate({ ...p, customer_id: customer.id, clarified: true }, EMPTY_CONVO, ctx);
-  return { ...next, reply: { ...next.reply, show: `${added.show} ${next.reply.show}`, say: `${added.say} ${next.reply.say}` } };
+  return { ...next, reply: { ...next.reply, show: `${added.show} ${next.reply.show}`, say: `${added.say} ${next.reply.say}`, chain: [added, next.reply] } };
 }
 
 export function fail(convo, lang, reason, parse = null) {
@@ -194,6 +206,18 @@ function topAnswer(ctx, lang) {
   return answer('top', lang, {
     list: top.map((c) => `${label(c)} ${fmt(bal.get(c.id))}`).join(', '),
     listSay: top.map((c) => `${sayName(c, lang)} ${sayNum(bal.get(c.id))}`).join(', '),
+    items: top.map((c) => ({ nameKey: nameKeyOf(c), n: bal.get(c.id) })),
+  });
+}
+
+/** "Indru vasool: Selvi akka 2,150, Murugesan 380." Who to ask for money today (see lib/collect.js). */
+export function collectAnswer(ctx, lang, now = new Date()) {
+  const list = collectionList(ctx.customers, ctx.entries, now, { limit: 3 });
+  if (!list.length) return answer('collect_none', lang);
+  return answer('collect_list', lang, {
+    list: list.map((c) => `${label(c)} ${fmt(c.balance)}`).join(', '),
+    listSay: list.map((c) => `${sayName(c, lang)} ${sayNum(c.balance)}`).join(', '),
+    items: list.map((c) => ({ nameKey: nameKeyOf(c), n: c.balance })),
   });
 }
 
@@ -205,14 +229,15 @@ export function todayAnswer(ctx, lang) {
     credit: fmt(s.credit), creditSay: sayNum(s.credit),
     payment: fmt(s.payment), paymentSay: sayNum(s.payment),
     total: fmt(total), totalSay: sayNum(total),
+    creditN: s.credit, paymentN: s.payment, totalN: total,
   });
 }
 
 function isFreshCommand(parse) {
   const named = Boolean(parse.customer_name || parse.customer_id);
   if (['credit', 'payment'].includes(parse.intent)) return named && parse.amount != null;
-  if (parse.intent === 'query_balance' || parse.intent === 'add_customer') return named;
-  return parse.intent === 'query_top' || parse.intent === 'query_today';
+  if (parse.intent === 'query_balance' || parse.intent === 'add_customer' || parse.intent === 'show_pay') return named;
+  return parse.intent === 'query_top' || parse.intent === 'query_today' || parse.intent === 'query_collect';
 }
 
 function ordinal(parse) {
@@ -333,13 +358,14 @@ export function decide(parse, convo, ctx) {
     case 'credit':
     case 'payment':
     case 'query_balance':
+    case 'show_pay':
       return evaluate(newPending(parse, lang), base, ctx);
     case 'add_customer': {
       const p = newPending(parse, lang);
       if (!p.customer_name) return ask('ask_who', {}, 'customer', p, base);
       const res = resolveName(p.customer_name, ctx.index);
       if (res.status === 'match' && res.score >= 0.97) {
-        return answer('customer_exists', lang, { name: label(res.customer), nameSay: sayName(res.customer, lang) });
+        return answer('customer_exists', lang, { name: label(res.customer), nameSay: sayName(res.customer, lang), nameKey: nameKeyOf(res.customer) });
       }
       const params = { name: spokenShow(p.customer_name), nameSay: spokenSay(p.customer_name, lang) };
       return ask('ask_new_customer', params, 'new_customer', p, base, YES_NO);
@@ -348,6 +374,8 @@ export function decide(parse, convo, ctx) {
       return topAnswer(ctx, lang);
     case 'query_today':
       return todayAnswer(ctx, lang);
+    case 'query_collect':
+      return collectAnswer(ctx, lang);
     case 'undo_last': {
       const e = ctx.lastUndoable();
       return e ? { kind: 'undo', entryId: e.id, reply: r('undo_done', lang), convo: { ...EMPTY_CONVO } } : answer('nothing_to_undo', lang);

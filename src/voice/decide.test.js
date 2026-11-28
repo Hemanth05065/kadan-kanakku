@@ -3,6 +3,10 @@ import { decide, afterCustomerAdded, EMPTY_CONVO } from './decide.js';
 import { parseLocal } from '../lib/localParser.js';
 import { buildNameIndex } from '../lib/names.js';
 import { mergeParses } from './nlu.js';
+import { setReplyVariety } from '../i18n/index.js';
+
+// These tests check the exact spec wording; alternate wordings are tested in voicePack.test.js.
+setReplyVariety(false);
 
 const customers = [
   { id: 'c1', name: 'Murugan', name_ta: 'முருகன் அண்ணா', honorific: 'anna' },

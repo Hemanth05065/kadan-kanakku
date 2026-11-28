@@ -46,9 +46,62 @@ export function MicButton({ phase, onStart, onEnd }) {
         <span className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
       ) : (
         <svg viewBox="0 0 24 24" className="h-16 w-16" fill="currentColor" aria-hidden>
-          <path d="M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z" />
+          <path d={MIC_ICON} />
         </svg>
       )}
+    </button>
+  );
+}
+
+const MIC_ICON = 'M12 14a3 3 0 0 0 3-3V5a3 3 0 0 0-6 0v6a3 3 0 0 0 3 3Zm5-3a5 5 0 0 1-10 0H5a7 7 0 0 0 6 6.92V21h2v-3.08A7 7 0 0 0 19 11h-2Z';
+
+/** Hands-free on: the big button shows what the app is doing; a tap turns hands-free off. */
+export function HandsFreeButton({ phase, level, onStop }) {
+  const hearing = phase === 'recording';
+  const busy = phase === 'transcribing' || phase === 'understanding';
+  const speaking = phase === 'speaking';
+  return (
+    <button
+      type="button"
+      aria-label="Hands-free is on. Tap to stop"
+      onClick={onStop}
+      className={`relative flex h-36 w-36 items-center justify-center rounded-full text-white shadow-xl transition-colors ${
+        hearing ? 'bg-red-600' : busy || speaking ? 'bg-leaf-700' : 'bg-leaf-800'
+      }`}
+    >
+      {!busy && !speaking && (
+        <>
+          <span className="absolute inset-0 animate-ping rounded-full bg-leaf-500/30" style={{ animationDuration: '2.2s' }} aria-hidden />
+          <span
+            className={`absolute inset-0 rounded-full ring-8 transition-transform duration-75 ${hearing ? 'ring-red-400/50' : 'ring-leaf-400/40'}`}
+            style={{ transform: `scale(${1 + Math.min(1, level) * 0.3})` }}
+            aria-hidden
+          />
+        </>
+      )}
+      {busy ? (
+        <span className="h-12 w-12 animate-spin rounded-full border-4 border-white/30 border-t-white" />
+      ) : speaking ? (
+        <span className="text-5xl" aria-hidden>🔊</span>
+      ) : (
+        <svg viewBox="0 0 24 24" className="relative h-16 w-16" fill="currentColor" aria-hidden>
+          <path d={MIC_ICON} />
+        </svg>
+      )}
+    </button>
+  );
+}
+
+/** Small round switch next to the hold-to-talk button. */
+export function HandsFreeToggle({ onStart }) {
+  const { t, en, both } = useT();
+  return (
+    <button type="button" onClick={onStart} className="flex max-w-[7rem] flex-col items-center gap-1 text-center">
+      <span className="flex h-14 w-14 items-center justify-center rounded-full bg-white text-2xl shadow ring-1 ring-leaf-700/30" aria-hidden>🎧</span>
+      <span className="text-xs font-semibold leading-tight text-leaf-900">
+        {t('hands_free')}
+        {both && <span className="block font-normal opacity-70">{en('hands_free')}</span>}
+      </span>
     </button>
   );
 }
@@ -75,8 +128,8 @@ export function VoicePanel({ flow }) {
   const { customers } = useStore();
 
   useEffect(() => {
-    if (ui.phase === 'recording') setTyping(false);
-  }, [ui.phase]);
+    if (ui.phase === 'recording' && !ui.handsFree) setTyping(false); // hands-free hears the shop: keep typing
+  }, [ui.phase, ui.handsFree]);
 
   const optionLabel = (o) => {
     if (o.label === 'yes' || o.label === 'no' || o.label === 'new_customer') {

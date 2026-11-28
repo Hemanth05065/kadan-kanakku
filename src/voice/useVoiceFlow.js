@@ -1,12 +1,17 @@
 // Orchestrates one counter conversation:
-// hold mic -> record -> (quality gate) -> Whisper -> LLM + grammar -> decide -> speak
-// -> 3 s auto-save with Undo, or one clarifying question, or the manual form.
+// hold mic (or hands-free: just talk) -> record -> (quality gate) -> Whisper -> LLM + grammar
+// -> decide -> speak -> 3 s auto-save with Undo, or one clarifying question, or the manual form.
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Recorder } from './recorder.js';
 import { transcribe, engines, startLiveRecognition, speechLangCode } from './stt.js';
 import { understand } from './nlu.js';
 import { speak, stopSpeaking } from './tts.js';
-import { decide, afterCustomerAdded, fail, todayAnswer, EMPTY_CONVO } from './decide.js';
+import { chime } from './voiceClips.js';
+import { HandsFree } from './handsFree.js';
+import { handsFreeShouldAct } from './vad.js';
+import { analyse, encodeWav } from './audio.js';
+import { isVpa } from '../lib/upi.js';
+import { decide, afterCustomerAdded, fail, todayAnswer, collectAnswer, EMPTY_CONVO } from './decide.js';
 import { reply, PACKS } from '../i18n/index.js';
 import { LIMITS } from '../lib/config.js';
 import { getState, addEntry, updateEntry, removeEntry, addCustomer, addAlias, lastUndoable } from '../lib/store.js';
@@ -15,6 +20,7 @@ import { uuid } from '../lib/util.js';
 
 const recorder = new Recorder();
 const IDLE_RESET_MS = 90000;
+const HF_QUIET_OFF_MS = 10 * 60 * 1000; // hands-free switches itself off after 10 quiet minutes
 
 const INITIAL = {
   phase: 'idle', // idle | recording | transcribing | understanding | speaking | countdown | awaiting
@@ -28,6 +34,7 @@ const INITIAL = {
   manual: null, // prefill for the manual form
   error: null,
   hint: null,
+  handsFree: null, // { detector: 'silero' | 'loudness' } while hands-free listening is on
 };
 
 const AWAIT_FOR_LLM = { amount: 'amount', customer: 'customer', choice: 'customer', new_customer: 'yes_no', confirm: 'yes_no' };
@@ -48,6 +55,25 @@ export function useVoiceFlow() {
   const lastClipKey = useRef(null);
   const lastOptions = useRef([]);
   const demoRun = useRef(null);
+  const handsFree = useRef(null); // HandsFree while hands-free listening is on
+  const wakeLock = useRef(null);
+  const quietTimer = useRef(null);
+
+  /** Where the conversation rests between utterances. */
+  const restPhase = () => (countdown.current ? 'countdown' : convo.current.awaiting ? 'awaiting' : 'idle');
+  /** Mid-conversation: the app asked something, or a save is counting down. */
+  const engaged = () => Boolean(countdown.current || convo.current.awaiting);
+
+  /** Speak, with hands-free listening paused so the app never hears (and answers) itself. */
+  const talk = async (r) => {
+    const hf = handsFree.current;
+    hf?.pause();
+    try {
+      await speak(r);
+    } finally {
+      hf?.resume();
+    }
+  };
 
   const replyLang = () => {
     const pref = getState().settings.replyLang;
@@ -63,6 +89,7 @@ export function useVoiceFlow() {
       entries: s.entries,
       index: buildNameIndex(s.customers, s.aliases),
       replyLang: s.settings.replyLang,
+      upi: isVpa(s.settings.upiId),
       lastUndoable,
       justSaved: justSaved.current && Date.now() - justSaved.current.at < 10000 ? justSaved.current.id : null,
     };
@@ -109,6 +136,8 @@ export function useVoiceFlow() {
     clearTimeout(cd.timer);
     countdown.current = null;
     const entry = await saveEntryFrom(cd.action);
+    handsFree.current?.deafen(450);
+    chime('saved'); // the 3-second save happens silently otherwise
     setUi((u) => ({ phase: u.phase === 'countdown' ? 'idle' : u.phase, countdown: null, lastSaved: entry }));
     return entry;
   };
@@ -128,14 +157,14 @@ export function useVoiceFlow() {
     countdown.current = null;
     const r = reply('not_saved', cd.action.reply.lang);
     setUi({ phase: 'idle', countdown: null, reply: r, options: [] });
-    if (spoken) await speak(r);
+    if (spoken) await talk(r);
   }, [setUi]);
 
   // ── carrying out decisions ───────────────────────────────────────────────
 
   const say = async (r, phaseAfter) => {
     setUi({ reply: r, phase: 'speaking' });
-    await speak(r);
+    await talk(r);
     if (phaseAfter) setUi({ phase: phaseAfter });
   };
 
@@ -148,7 +177,7 @@ export function useVoiceFlow() {
       case 'pending_save':
         countdown.current = { action, timer: null };
         setUi({ options: [], reply: action.reply, countdown: { until: null, ms: LIMITS.SAVE_DELAY_MS }, phase: 'speaking' });
-        await speak(action.reply);
+        await talk(action.reply);
         if (countdown.current?.action === action) armCountdown();
         return;
       case 'save': {
@@ -163,6 +192,9 @@ export function useVoiceFlow() {
       case 'answer':
         await resolveReviews();
         setUi({ options: [] });
+        return say(action.reply, 'idle');
+      case 'show_pay':
+        setUi({ options: [], payFor: { customerId: action.customerId, amount: action.amount } });
         return say(action.reply, 'idle');
       case 'undo':
         await removeEntry(action.entryId);
@@ -187,7 +219,7 @@ export function useVoiceFlow() {
     }
   };
 
-  const processText = async (text, clipKey) => {
+  const processText = async (text, clipKey, { hf = false } = {}) => {
     setUi({ phase: 'understanding', heard: text });
     const c = convo.current;
     const context = c.awaiting
@@ -204,6 +236,11 @@ export function useVoiceFlow() {
       await commitCountdown();
       if (parse.intent === 'confirm_yes') return setUi({ phase: 'idle' });
     }
+    // Hands-free hears the whole shop: outside a conversation, only clear ledger commands count.
+    if (hf && !handsFreeShouldAct(parse, { engaged: Boolean(convo.current.awaiting), justSaved: Boolean(ctxNow().justSaved) })) {
+      if (clipKey) clips.current.delete(clipKey);
+      return setUi({ phase: restPhase(), hint: 'hf_ignored' });
+    }
     const action = decide(parse, convo.current, ctxNow());
     if (action.kind === 'fail' || action.kind === 'manual') {
       await saveReview(clipKey, action.review, text, parse);
@@ -211,10 +248,62 @@ export function useVoiceFlow() {
     return run(action, clipKey);
   };
 
+  // ── one recorded utterance -> understood ─────────────────────────────────
+
+  /**
+   * rec = { pcm, wav, archive, quality } from a hold-to-talk press or a hands-free sentence.
+   * Hands-free (hf) clips that come to nothing outside a conversation are dropped quietly:
+   * the shop is never noisy enough to make the app nag.
+   */
+  const handleClip = async (rec, { hf = false } = {}) => {
+    const quiet = hf && !engaged();
+    if (rec.quality.verdict === 'short' || (quiet && rec.quality.verdict !== 'ok')) {
+      live.current?.abort();
+      live.current = null;
+      setUi({ phase: restPhase(), hint: hf ? null : 'hold_longer' });
+      if (countdown.current) armCountdown();
+      return;
+    }
+    const clipKey = uuid();
+    clips.current.set(clipKey, rec.archive);
+    lastClipKey.current = clipKey;
+    lastActivity.current = Date.now();
+
+    // Quality gate: never guess from audio we can't hear properly.
+    if (rec.quality.verdict === 'quiet' || rec.quality.verdict === 'noisy') {
+      live.current?.abort();
+      live.current = null;
+      if (countdown.current) await commitCountdown();
+      return run(fail(convo.current, replyLang(), rec.quality.verdict), clipKey);
+    }
+
+    setUi({ phase: 'transcribing', heard: '' });
+    const stt = await transcribe({ wav: rec.wav, archive: rec.archive, pcm: rec.pcm, live: live.current });
+    live.current = null;
+    if (!stt) {
+      // No engine reachable (offline, no on-device model): keep the clip for later.
+      if (hf) stopHandsFree('hf_needs_engine'); // or every word in the shop would pile up for review
+      if (countdown.current) await commitCountdown();
+      await saveReview(clipKey, 'offline');
+      reviewIds.current = []; // stays in Needs review; not tied to this conversation
+      convo.current = EMPTY_CONVO;
+      return say(reply('saved_for_review', replyLang()), 'idle');
+    }
+    setUi({ engine: stt.engine });
+    if (!stt.text.trim()) {
+      if (hf && !engaged()) {
+        clips.current.delete(clipKey);
+        return setUi({ phase: restPhase() });
+      }
+      return run(fail(convo.current, replyLang(), 'unclear'), clipKey);
+    }
+    return processText(stt.text, clipKey, { hf });
+  };
+
   // ── mic press / release ──────────────────────────────────────────────────
 
   const pressStart = useCallback(async () => {
-    if (pressing.current) return;
+    if (pressing.current || handsFree.current) return;
     stopSpeaking();
     pressing.current = true;
     if (countdown.current) clearTimeout(countdown.current.timer);
@@ -250,40 +339,78 @@ export function useVoiceFlow() {
       setUi({ phase: 'idle' });
       return;
     }
-    if (rec.quality.verdict === 'short') {
-      live.current?.abort();
-      live.current = null;
-      setUi({ phase: countdown.current ? 'countdown' : convo.current.awaiting ? 'awaiting' : 'idle', hint: 'hold_longer' });
-      if (countdown.current) armCountdown();
+    return handleClip(rec);
+  }, [setUi]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  // ── hands-free: just talk ────────────────────────────────────────────────
+
+  const quietSoon = () => {
+    clearTimeout(quietTimer.current);
+    quietTimer.current = setTimeout(() => stopHandsFree('hf_quiet_off'), HF_QUIET_OFF_MS);
+  };
+
+  const stopHandsFree = useCallback((hint = null) => {
+    const hf = handsFree.current;
+    if (!hf) return;
+    handsFree.current = null;
+    hf.stop();
+    clearTimeout(quietTimer.current);
+    wakeLock.current?.release().catch(() => {});
+    wakeLock.current = null;
+    setUi((u) => ({ handsFree: null, level: 0, phase: u.phase === 'recording' ? restPhase() : u.phase, hint }));
+  }, [setUi]); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const startHandsFree = useCallback(async () => {
+    if (handsFree.current || pressing.current || demoRun.current) return;
+    const eng = engines();
+    if (!eng.server && !eng.device) {
+      // The browser's own recognition can't be pointed at a clip, so hands-free needs Whisper.
+      setUi({ error: 'hf_needs_engine', hint: null });
       return;
     }
-    const clipKey = uuid();
-    clips.current.set(clipKey, rec.archive);
-    lastClipKey.current = clipKey;
-    lastActivity.current = Date.now();
-
-    // Quality gate: never guess from audio we can't hear properly.
-    if (rec.quality.verdict === 'quiet' || rec.quality.verdict === 'noisy') {
-      live.current?.abort();
-      live.current = null;
-      if (countdown.current) await commitCountdown();
-      return run(fail(convo.current, replyLang(), rec.quality.verdict), clipKey);
+    stopSpeaking();
+    const hf = new HandsFree(recorder, {
+      onLevel: (level) => setUi({ level }),
+      onDetector: (detector) => handsFree.current === hf && setUi({ handsFree: { detector } }),
+      onStart: () => {
+        quietSoon();
+        if (countdown.current) clearTimeout(countdown.current.timer);
+        if (Date.now() - lastActivity.current > IDLE_RESET_MS && !countdown.current) convo.current = EMPTY_CONVO;
+        setUi({ phase: 'recording', hint: null, error: null });
+      },
+      onMisfire: () => {
+        setUi({ phase: restPhase() });
+        if (countdown.current) armCountdown();
+      },
+      onUtterance: async ({ pcm, noiseDb }) => {
+        hf.pause();
+        try {
+          const quality = analyse(pcm, undefined, { noiseDb });
+          const wav = encodeWav(quality.trimmed);
+          await handleClip({ pcm: quality.trimmed, wav, archive: { blob: wav, mime: 'audio/wav' }, quality }, { hf: true });
+        } catch (err) {
+          console.warn('hands-free turn failed', err);
+          setUi({ phase: restPhase() });
+        } finally {
+          hf.resume();
+        }
+      },
+    });
+    handsFree.current = hf;
+    try {
+      await hf.start({ wait: getState().settings.handsFreeWait });
+    } catch (err) {
+      console.warn('mic failed', err);
+      handsFree.current = null;
+      hf.stop();
+      setUi({ handsFree: null, error: 'mic_blocked' });
+      return;
     }
-
-    setUi({ phase: 'transcribing', heard: '' });
-    const stt = await transcribe({ wav: rec.wav, archive: rec.archive, pcm: rec.pcm, live: live.current });
-    live.current = null;
-    if (!stt) {
-      // No engine reachable (offline, no on-device model): keep the clip for later.
-      if (countdown.current) await commitCountdown();
-      await saveReview(clipKey, 'offline');
-      reviewIds.current = []; // stays in Needs review; not tied to this conversation
-      convo.current = EMPTY_CONVO;
-      return say(reply('saved_for_review', replyLang()), 'idle');
-    }
-    setUi({ engine: stt.engine });
-    if (!stt.text.trim()) return run(fail(convo.current, replyLang(), 'unclear'), clipKey);
-    return processText(stt.text, clipKey);
+    quietSoon();
+    try {
+      wakeLock.current = (await navigator.wakeLock?.request('screen')) || null; // keep the counter phone awake
+    } catch { /* not allowed here: the screen may sleep */ }
+    setUi({ handsFree: { detector: hf.detector }, phase: restPhase(), hint: null, error: null, level: 0 });
   }, [setUi]); // eslint-disable-line react-hooks/exhaustive-deps
 
   // ── touch helpers ────────────────────────────────────────────────────────
@@ -312,10 +439,12 @@ export function useVoiceFlow() {
     justSaved.current = null;
     const r = reply('undo_done', e.lang || 'ta');
     setUi({ lastSaved: null, reply: r });
-    await speak(r);
+    await talk(r);
   }, [ui.lastSaved, setUi]);
 
   const saveNow = useCallback(() => commitCountdown(), []); // eslint-disable-line react-hooks/exhaustive-deps
+
+  const closePay = useCallback(() => setUi({ payFor: null }), [setUi]);
 
   /** Manual form saved: attach the last voice clip, resolve review rows, learn the name. */
   const completeManual = useCallback(async (fields, prefill) => {
@@ -347,12 +476,21 @@ export function useVoiceFlow() {
     await run(todayAnswer(ctxNow(), lang), null);
   }, []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  /** Read out who to collect from today ("Indru vasool: Selvi akka 2,150, …"). */
+  const speakCollect = useCallback(async () => {
+    stopSpeaking();
+    const st = getState().settings;
+    const lang = PACKS[st.replyLang] ? st.replyLang : st.uiLang || 'ta';
+    await run(collectAnswer(ctxNow(), lang), null);
+  }, []); // eslint-disable-line react-hooks/exhaustive-deps
+
   /**
    * Demo autopilot: plays a scripted counter conversation through the real pipeline
    * (understanding, decisions, spoken replies, saves). Typed out like live captions.
    */
   const runDemo = useCallback(async (script) => {
     if (demoRun.current) return;
+    stopHandsFree();
     const token = {};
     demoRun.current = token;
     const alive = () => demoRun.current === token;
@@ -402,6 +540,7 @@ export function useVoiceFlow() {
   useEffect(() => {
     const onVis = () => {
       if (document.visibilityState === 'hidden') {
+        stopHandsFree(); // never listen from the background
         recorder.release();
         if (countdown.current) commitCountdown();
       }
@@ -431,7 +570,11 @@ export function useVoiceFlow() {
     completeManual,
     dismiss,
     speakSummary,
+    speakCollect,
     runDemo,
     stopDemo,
+    startHandsFree,
+    stopHandsFree,
+    closePay,
   };
 }

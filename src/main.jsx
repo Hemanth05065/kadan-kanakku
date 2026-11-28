@@ -3,23 +3,29 @@ import { createRoot } from 'react-dom/client';
 import { registerSW } from 'virtual:pwa-register';
 import './index.css';
 import App from './App.jsx';
+import PayPage from './screens/PayPage.jsx';
 import { initStore, getState, subscribe } from './lib/store.js';
 import { startSync } from './lib/sync.js';
 import { loadDeviceModel } from './voice/localWhisper.js';
 import { reprocessReviews } from './voice/reprocess.js';
+import { loadVoiceClips } from './voice/voiceClips.js';
 import { CLOUD } from './lib/config.js';
 import { initAuth } from './lib/auth.js';
 
 registerSW({ immediate: true });
 
+// A customer opening a UPI pay link from a reminder gets just the pay page.
+const payOnly = location.hash.startsWith('#/pay');
+
 createRoot(document.getElementById('root')).render(
   <StrictMode>
-    <App />
+    {payOnly ? <PayPage /> : <App />}
   </StrictMode>,
 );
 
-(async () => {
+if (!payOnly) (async () => {
   await initStore();
+  loadVoiceClips();
   if (CLOUD) await initAuth().catch((err) => console.warn('auth init failed', err));
   startSync();
 

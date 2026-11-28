@@ -9,7 +9,7 @@ import { LEXICON, ITEM_DISPLAY, LANGS, NUMBER_EXACT } from '../i18n/index.js';
 const NAME_STOP = /^\d/;
 
 // Command words say more about the language than fillers or item names do.
-const CATEGORY_WEIGHT = { credit: 2, payment: 2, query: 2, top: 2, today: 2, undo: 2, add: 1.5, yes: 1.5, no: 1.5, honorific: 1, rupee: 1, interjection: 0 };
+const CATEGORY_WEIGHT = { credit: 2, payment: 2, query: 2, top: 2, today: 2, collect: 2, qr: 1, undo: 2, add: 1.5, yes: 1.5, no: 1.5, honorific: 1, rupee: 1, interjection: 0 };
 
 /** Which language an utterance is in: its script, then its words (shared words split their vote). */
 export function detectLanguage(text, tokens, defaultLang = 'ta') {
@@ -97,9 +97,17 @@ export function parseLocal(text, { index = [], defaultLang = 'ta' } = {}) {
   const yes = has('yes'), no = has('no');
   const todayAsk = has('today') && !amountOk && !customer_name &&
     (has('query') || has('credit') || has('payment') || has('top') || tokens.length <= 3);
+  // "vasool": "yaar kitta vasool pannanum?" asks who to collect from; with a name and an
+  // amount ("Murugan kitta 500 vasool aachu") it records money collected.
+  const knownName = Boolean(customer_name) && nameScore >= 0.7;
   if (has('undo') && !amountOk && !has('payment')) intent = 'undo_last';
+  // "Murugan anna-ku QR kaattu": show the UPI QR for their balance (or for the amount said).
+  // "500 GPay-la kuduthaar" is a payment, not a QR request.
+  else if (has('qr') && !has('payment') && !has('credit') && !has('collect')) intent = 'show_pay';
+  else if (has('collect') && !amountOk && !knownName) intent = 'query_collect';
+  else if (has('collect') && !amountOk) intent = 'query_balance';
   else if (todayAsk) intent = 'query_today';
-  else if (has('payment')) intent = 'payment';
+  else if (has('payment') || (has('collect') && amountOk)) intent = 'payment';
   else if (has('credit') && (amountOk || customer_name)) intent = 'credit';
   else if (has('add') && !amountOk && customer_name) intent = 'add_customer';
   else if (has('add') && amountOk) intent = 'credit';
@@ -109,6 +117,12 @@ export function parseLocal(text, { index = [], defaultLang = 'ta' } = {}) {
   else if (yes && tokens.length <= 4 && !amountOk) intent = 'confirm_yes';
   else if (amountOk && customer_name) { intent = 'credit'; explicit = false; }
   else if (has('credit')) intent = 'credit';
+
+  // "Who to collect from" is about the whole shop, not the stray word taken for a name.
+  if (intent === 'query_collect') {
+    customer_name = null;
+    customer_id = null;
+  }
 
   // ── confidence ──
   let confidence = 0.92;
