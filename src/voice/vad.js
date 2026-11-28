@@ -131,6 +131,7 @@ export function handsFreeShouldAct(parse, { engaged = false, justSaved = false }
       return named || parse.amount != null;
     case 'query_balance':
     case 'add_customer':
+    case 'show_pay':
       return named;
     case 'query_top':
     case 'query_today':

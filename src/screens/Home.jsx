@@ -6,6 +6,8 @@ import { useStore, useLedger, updateEntry, updateCustomer, addAlias, resetDemo }
 import { collectionList } from '../lib/collect.js';
 import { reminderLink } from '../lib/whatsapp.js';
 import { money } from '../lib/util.js';
+import { payRequest } from '../lib/upi.js';
+import { PaySheet } from '../components/Pay.jsx';
 import { DEMO_SCRIPT } from '../voice/demoScript.js';
 
 function Stat({ k, value, tone }) {
@@ -43,7 +45,7 @@ function CollectCard({ flow, go }) {
               <span className="block text-xs leading-snug text-stone-600">{c.reasons.map(reason).join(' · ')}</span>
             </button>
             <a
-              href={reminderLink(c, c.balance, s.shop?.name || 'our shop', lang)}
+              href={reminderLink(c, c.balance, s.shop?.name || 'our shop', lang, { payUrl: payRequest(c, c.balance, s.settings, s.shop?.name || '')?.page })}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => updateCustomer(c.id, { last_reminded_at: new Date().toISOString() })}
@@ -197,6 +199,9 @@ export default function Home({ flow, go }) {
         </div>
       </div>
 
+      {ui.payFor && L.customerById.get(ui.payFor.customerId) && (
+        <PaySheet customer={L.customerById.get(ui.payFor.customerId)} amount={ui.payFor.amount} onClose={flow.closePay} go={go} />
+      )}
       {ui.manual && (
         <EntryEditor
           key={`manual-${ui.manual.clipKey || 'new'}`}

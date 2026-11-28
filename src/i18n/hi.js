@@ -61,6 +61,10 @@ const hi = {
     hf_listening: 'सुन रहा हूँ, बस बोलिए',
     hf_tap_stop: 'रोकने के लिए छुएँ',
     collect_today: 'आज वसूली',
+    scan_to_pay: 'स्कैन करके भुगतान करें',
+    pay_by_upi: 'UPI से भुगतान',
+    open_upi_app: 'UPI ऐप से भुगतान करें',
+    send_pay_link: 'लिंक भेजें',
   },
 
   replies: {
@@ -73,6 +77,8 @@ const hi = {
     top_none: () => ({ show: 'Kisi ka baaki nahi.', say: 'किसी का बाकी नहीं।' }),
     collect_list: (p) => ({ show: `Aaj vasooli: ${p.list}.`, say: `आज वसूली: ${p.listSay}।` }),
     collect_none: () => ({ show: 'Aaj kisi se vasooli nahi.', say: 'आज किसी से वसूली नहीं।' }),
+    pay_qr: (p) => ({ show: `${p.name}, ${p.amt} rupaye. QR scan kijiye.`, say: `${p.nameSay}, ${p.amtSay} रुपये। QR स्कैन कीजिए।` }),
+    upi_missing: () => ({ show: 'UPI ID nahi hai. Settings mein daaliye.', say: 'UPI आईडी नहीं है। सेटिंग्स में डालिए।' }),
     today_summary: (p) => ({
       show: `Aaj ${p.credit} udhaar, ${p.payment} jama. Kul baaki ${p.total}.`,
       say: `आज ${p.creditSay} उधार, ${p.paymentSay} जमा। कुल बाकी ${p.totalSay}।`,
@@ -106,6 +112,7 @@ const hi = {
     top: ['kaun', 'kisne', 'sabse', 'zyada', 'jyada', 'कौन', 'सबसे', 'ज़्यादा'],
     today: ['aaj', 'आज'],
     collect: ['vasooli', 'vasuli', 'wasooli', 'vasool', 'वसूली', 'वसूल'],
+    qr: ['qr', 'scan', 'upi', 'gpay', 'phonepe', 'paytm', 'स्कैन'],
     undo: ['hatao', 'hata', 'mitao', 'mita', 'galti', 'kaato', 'हटाओ', 'मिटाओ', 'गलती'],
     add: ['naya', 'nayi', 'naye', 'jodo', 'नया', 'जोड़ो'],
     yes: ['haan', 'ha', 'haanji', 'theek', 'thik', 'sahi', 'bilkul', 'हाँ', 'हां', 'ठीक', 'सही'],
@@ -114,7 +121,7 @@ const hi = {
     rupee: ['rupaye', 'rupaiya', 'rupay', 'rupiya', 'रुपये', 'रुपया', 'रुपए'],
     unit: ['darjan', 'paav', 'adha', 'किलो', 'लीटर', 'पैकेट', 'दर्जन'],
     filler: [
-      'ka', 'ki', 'ke', 'ko', 'se', 'ne', 'hai', 'tha', 'aur', 'ab', 'abhi', 'mein', 'me', 'par', 'wala', 'wali',
+      'dikhao', 'dikha', 'dikhaiye', 'दिखाओ', 'ka', 'ki', 'ke', 'ko', 'se', 'ne', 'hai', 'tha', 'aur', 'ab', 'abhi', 'mein', 'me', 'par', 'wala', 'wali',
       'kuch', 'sab', 'bhi', 'toh', 'ye', 'wo', 'yeh', 'woh', 'kar', 'karke', 'kardo', 'mera', 'uska', 'uske', 'paise',
       'paisa', 'de', 'do', 'dena', 'gaya', 'gaye', 'का', 'की', 'के', 'को', 'से', 'ने', 'है', 'और', 'में', 'पैसे', 'दो',
     ],

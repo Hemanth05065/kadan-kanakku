@@ -530,6 +530,27 @@
       "intent": "query_collect",
       "customer": null,
       "amount": null
+    },
+    {
+      "lang": "ta",
+      "text": "Murugan anna-ku QR kaattu",
+      "intent": "show_pay",
+      "customer": "Murugan",
+      "amount": null
+    },
+    {
+      "lang": "ta",
+      "text": "Murugan anna 500 GPay-la kuduthaar",
+      "intent": "payment",
+      "customer": "Murugan",
+      "amount": 500
+    },
+    {
+      "lang": "en",
+      "text": "Show the QR for Selvi",
+      "intent": "show_pay",
+      "customer": "Selvi",
+      "amount": null
     }
   ]
 }

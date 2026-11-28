@@ -8,6 +8,8 @@ import { useVoiceClips, packProgress } from '../voice/voiceClips.js';
 import { nameClipKey } from '../voice/voicePack.js';
 import { reply } from '../i18n/index.js';
 import { DEVICE_MODELS, loadDeviceModel, unloadDeviceModel, useWhisperStatus } from '../voice/localWhisper.js';
+import { isVpa } from '../lib/upi.js';
+import { PaySheet } from '../components/Pay.jsx';
 
 function Choice({ k, value, options, onChange }) {
   const { t } = useT();
@@ -103,6 +105,54 @@ function OnDeviceAI() {
   );
 }
 
+
+/** The shop's UPI ID: customers pay the exact balance by QR or from a reminder link. */
+function UpiCard({ go }) {
+  const s = useStore();
+  const { t } = useT();
+  const [id, setId] = useState(s.settings.upiId || '');
+  const [name, setName] = useState(s.settings.upiName || '');
+  const [preview, setPreview] = useState(false);
+  const bad = id.trim() !== '' && !isVpa(id);
+  const save = () => !bad && setSettings({ upiId: id.trim(), upiName: name.trim() });
+  const saved = isVpa(s.settings.upiId);
+  return (
+    <Card title="upi_title">
+      <label className="block space-y-1">
+        <BiLabel k="upi_id" className="text-sm font-semibold text-stone-600" />
+        <input
+          value={id}
+          onChange={(e) => setId(e.target.value)}
+          onBlur={save}
+          placeholder="yourshop@okaxis"
+          inputMode="email"
+          autoCapitalize="none"
+          autoCorrect="off"
+          spellCheck={false}
+          className={`min-h-12 w-full rounded-xl border-2 bg-white px-3 font-mono text-lg ${bad ? 'border-red-500' : 'border-stone-300'}`}
+        />
+      </label>
+      {bad && <p className="text-sm text-red-700">{t('upi_invalid')}</p>}
+      <label className="block space-y-1">
+        <BiLabel k="upi_name" className="text-sm font-semibold text-stone-600" />
+        <input
+          value={name}
+          onChange={(e) => setName(e.target.value)}
+          onBlur={save}
+          placeholder={s.shop?.name || ''}
+          className="min-h-12 w-full rounded-xl border-2 border-stone-300 bg-white px-3 text-lg"
+        />
+      </label>
+      <p className="text-sm text-stone-600">{t('upi_help')}</p>
+      {saved && (
+        <Button variant="secondary" className="w-full" onClick={() => setPreview(true)}>
+          📱 {t('show_qr')} · ₹1
+        </Button>
+      )}
+      {preview && <PaySheet customer={{ name: s.shop?.name || 'Test' }} amount={1} onClose={() => setPreview(false)} go={go} />}
+    </Card>
+  );
+}
 
 /** The recorded shop voice: progress, on/off and the way into the studio. */
 function ShopVoiceCard({ go }) {
@@ -216,6 +266,8 @@ export default function Settings({ go }) {
       <OnDeviceAI />
 
       <ShopVoiceCard go={go} />
+
+      <UpiCard go={go} />
 
       <Card>
         <Choice k="ui_language" value={st.uiLang} onChange={(v) => setSettings({ uiLang: v })} options={[['ta', 'tamil'], ['en', 'english'], ['hi', 'hindi'], ['te', 'telugu']]} />

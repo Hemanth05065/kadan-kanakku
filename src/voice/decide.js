@@ -119,7 +119,7 @@ export function evaluate(p, convo, ctx) {
       );
     } else {
       const params = { name: spokenShow(p.customer_name), nameSay: spokenSay(p.customer_name, lang) };
-      if (p.intent === 'query_balance') return answer('no_account', lang, params);
+      if (p.intent === 'query_balance' || p.intent === 'show_pay') return answer('no_account', lang, params);
       return ask('ask_new_customer', params, 'new_customer', p, convo, YES_NO);
     }
   }
@@ -134,6 +134,16 @@ export function evaluate(p, convo, ctx) {
     return answer(key, lang, { ...who, total: fmt(Math.abs(bal)), totalSay: sayNum(Math.abs(bal)), totalN: Math.abs(bal) }, { customerId: c.id });
   }
   if (p.intent === 'add_customer') return answer('customer_exists', lang, who, { customerId: c.id });
+
+  if (p.intent === 'show_pay') {
+    const amt = Number(p.amount) > 0 ? Number(p.amount) : bal;
+    if (!(amt > 0)) {
+      const key = bal < 0 ? 'advance' : 'balance_zero';
+      return answer(key, lang, { ...who, total: fmt(Math.abs(bal)), totalSay: sayNum(Math.abs(bal)), totalN: Math.abs(bal) }, { customerId: c.id });
+    }
+    if (!ctx.upi) return answer('upi_missing', lang);
+    return answer('pay_qr', lang, { ...who, amt: fmt(amt), amtSay: sayNum(amt), amtN: amt }, { kind: 'show_pay', customerId: c.id, amount: amt });
+  }
 
   if (!(Number(p.amount) > 0)) return ask('ask_amount', {}, 'amount', { ...p, amount: null }, convo);
 
@@ -226,7 +236,7 @@ export function todayAnswer(ctx, lang) {
 function isFreshCommand(parse) {
   const named = Boolean(parse.customer_name || parse.customer_id);
   if (['credit', 'payment'].includes(parse.intent)) return named && parse.amount != null;
-  if (parse.intent === 'query_balance' || parse.intent === 'add_customer') return named;
+  if (parse.intent === 'query_balance' || parse.intent === 'add_customer' || parse.intent === 'show_pay') return named;
   return parse.intent === 'query_top' || parse.intent === 'query_today' || parse.intent === 'query_collect';
 }
 
@@ -348,6 +358,7 @@ export function decide(parse, convo, ctx) {
     case 'credit':
     case 'payment':
     case 'query_balance':
+    case 'show_pay':
       return evaluate(newPending(parse, lang), base, ctx);
     case 'add_customer': {
       const p = newPending(parse, lang);

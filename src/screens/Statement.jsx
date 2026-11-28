@@ -4,6 +4,8 @@ import { useStore, useLedger } from '../lib/store.js';
 import { statement, monthRange } from '../lib/ledger.js';
 import { statementText, waLink } from '../lib/whatsapp.js';
 import { fmt } from '../lib/util.js';
+import { payRequest } from '../lib/upi.js';
+import { Qr } from '../components/Pay.jsx';
 
 const RANGES = [
   ['this', 'this_month'],
@@ -32,6 +34,12 @@ export default function Statement({ id, go }) {
   if (!c) return null;
   const name = c.honorific ? `${c.name} ${c.honorific}` : c.name;
   const shareLang = lang === 'en' ? 'en' : lang;
+  // The QR and link ask for what is owed today (the statement may be for last month).
+  const owed = L.bal.get(id) || 0;
+  const pay = payRequest(c, owed, s.settings, s.shop?.name || '');
+  const shareText = statementText(c, st, s.shop?.name || '', shareLang, period) + (pay ? `
+
+${t('pay_by_upi')}: ${pay.page}` : '');
 
   return (
     <div className="statement mx-auto max-w-lg space-y-4 px-4 pb-28 pt-3 print:max-w-none print:p-0">
@@ -114,6 +122,16 @@ export default function Statement({ id, go }) {
           <BiLabel k="closing_balance" className="font-semibold" />
           <Money value={st.closing} className="text-xl font-extrabold" />
         </div>
+        {pay && (
+          <div className="flex items-center gap-4 rounded-xl border border-stone-200 p-3">
+            <Qr text={pay.link} className="w-28 shrink-0" />
+            <div className="text-left">
+              <BiLabel k="scan_to_pay" className="font-semibold" />
+              <p className="text-2xl font-extrabold text-leaf-900"><Money value={owed} /></p>
+              <p className="font-mono text-xs text-stone-500">{pay.vpa}</p>
+            </div>
+          </div>
+        )}
         <p className="text-center text-xs text-stone-400">
           Kadan Kanakku · {new Date().toLocaleString('en-IN')} · voice clips for each entry can be replayed in the app
         </p>
@@ -122,7 +140,7 @@ export default function Statement({ id, go }) {
       <div className="no-print grid grid-cols-2 gap-3">
         <Button variant="secondary" onClick={() => window.print()}>🖨 <BiLabel k="print_pdf" /></Button>
         <a
-          href={waLink(c, statementText(c, st, s.shop?.name || '', shareLang, period))}
+          href={waLink(c, shareText)}
           target="_blank"
           rel="noopener noreferrer"
           className="flex min-h-14 items-center justify-center gap-2 rounded-2xl bg-[#25D366] px-3 font-semibold text-white shadow-sm"

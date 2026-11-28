@@ -19,6 +19,7 @@
     "@supabase/supabase-js": "^2.119.2",
     "idb": "^8.0.4",
     "onnxruntime-web": "1.31.1",
+    "qrcode": "^1.5.4",
     "react": "^19.3.1",
     "react-dom": "^19.3.1",
     "swanada": "^1.0.0"

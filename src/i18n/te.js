@@ -61,6 +61,10 @@ const te = {
     hf_listening: 'వింటున్నాను, మాట్లాడండి',
     hf_tap_stop: 'ఆపడానికి తాకండి',
     collect_today: 'ఈ రోజు వసూలు',
+    scan_to_pay: 'స్కాన్ చేసి చెల్లించండి',
+    pay_by_upi: 'UPI ద్వారా చెల్లించండి',
+    open_upi_app: 'UPI యాప్‌తో చెల్లించండి',
+    send_pay_link: 'లింక్ పంపండి',
   },
 
   replies: {
@@ -73,6 +77,8 @@ const te = {
     top_none: () => ({ show: 'Evvarikee baaki ledu.', say: 'ఎవ్వరికీ బాకీ లేదు.' }),
     collect_list: (p) => ({ show: `Ee roju vasool: ${p.list}.`, say: `ఈ రోజు వసూలు: ${p.listSay}.` }),
     collect_none: () => ({ show: 'Ee roju vasool cheyyalsindi ledu.', say: 'ఈ రోజు వసూలు చేయాల్సింది లేదు.' }),
+    pay_qr: (p) => ({ show: `${p.name}, ${p.amt} rupayalu. QR scan cheyyandi.`, say: `${p.nameSay}, ${p.amtSay} రూపాయలు. QR స్కాన్ చేయండి.` }),
+    upi_missing: () => ({ show: 'UPI ID ledu. Settings lo pettandi.', say: 'UPI ఐడి లేదు. సెట్టింగ్స్‌లో పెట్టండి.' }),
     today_summary: (p) => ({
       show: `Ee roju ${p.credit} appu, ${p.payment} vachindi. Motham baaki ${p.total}.`,
       say: `ఈ రోజు ${p.creditSay} అప్పు, ${p.paymentSay} వచ్చింది. మొత్తం బాకీ ${p.totalSay}.`,
@@ -106,6 +112,7 @@ const te = {
     top: ['evaru', 'evvaru', 'ekkuva', 'ఎవరు', 'ఎక్కువ'],
     today: ['eeroju', 'roju', 'nedu', 'ఈరోజు', 'రోజు', 'నేడు'],
     collect: ['vasool', 'vasoolu', 'vasulu', 'వసూలు', 'వసూల్'],
+    qr: ['qr', 'scan', 'upi', 'gpay', 'phonepe', 'paytm', 'స్కాన్'],
     undo: ['teesey', 'teeseyi', 'tappu', 'తీసేయ్', 'తప్పు'],
     add: ['kotha', 'kottha', 'కొత్త'],
     yes: ['avunu', 'sare', 'saree', 'అవును', 'సరే'],
@@ -113,7 +120,7 @@ const te = {
     honorific: ['garu', 'gaaru', 'babu', 'thammudu', 'chelli', 'bava', 'గారు', 'బాబు', 'అన్న', 'అక్క', 'అమ్మ', 'తమ్ముడు'],
     rupee: ['rupayalu', 'roopayalu', 'rupaayalu', 'రూపాయలు', 'రూపాయి'],
     unit: ['కిలో', 'లీటర్', 'ప్యాకెట్'],
-    filler: ['ki', 'ku', 'nunchi', 'ee', 'aa', 'inka', 'kuda', 'chesi', 'cheyyi', 'cheyandi', 'cheppu', 'naaku', 'mee', 'డబ్బులు', 'ఈ', 'కి'],
+    filler: ['chupinchu', 'choopinchu', 'చూపించు', 'ki', 'ku', 'nunchi', 'ee', 'aa', 'inka', 'kuda', 'chesi', 'cheyyi', 'cheyandi', 'cheppu', 'naaku', 'mee', 'డబ్బులు', 'ఈ', 'కి'],
     items: [
       'biyyam', 'nune', 'pappu', 'chakkera', 'paalu', 'pindi', 'gudlu', 'ullipayalu', 'tamata', 'sabbu', 'karam',
       'chintapandu', 'neyyi', 'bellam',

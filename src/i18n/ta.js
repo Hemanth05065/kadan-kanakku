@@ -152,6 +152,19 @@ const ta = {
     r_never_paid: 'இதுவரை கட்டல, {n} நாள் ஆச்சு',
     r_still_buying: 'இந்த வாரமும் {n} கடன் வாங்கினார்',
     r_reminded: '{n} நாள் முன்னாடி நினைவூட்டினோம்',
+    upi_title: 'UPI பணம்',
+    upi_id: 'உங்க UPI ID',
+    upi_name: 'வாடிக்கையாளருக்கு தெரியும் பெயர்',
+    upi_invalid: 'இது UPI ID மாதிரி இல்லை (பெயர்@வங்கி)',
+    upi_help: 'வாடிக்கையாளர் QR ஸ்கேன் பண்ணி சரியான தொகையை கட்டலாம், இல்லை நினைவூட்டல்ல இருக்கிற லிங்க் தொட்டு கட்டலாம். பணம் நேரா உங்க வங்கிக்கு வரும்.',
+    show_qr: 'UPI QR',
+    scan_to_pay: 'ஸ்கேன் பண்ணி கட்டுங்க',
+    send_pay_link: 'லிங்க் அனுப்பு',
+    pay_by_upi: 'UPI-ல கட்ட',
+    upi_missing_title: 'முதல்ல Settings-ல உங்க UPI ID போடுங்க',
+    open_upi_app: 'UPI ஆப்பில் கட்டுங்க',
+    pay_link_broken: 'இந்த லிங்க் சரியில்லை',
+    pay_page_hint: 'போனில் மேலே உள்ள பட்டனை தொடுங்க. கம்ப்யூட்டரில் இருந்தால் QR-ஐ போனால் ஸ்கேன் பண்ணுங்க.',
   },
 
   // Each reply has `show` (Tanglish, shown on screen) and `say` (Tamil script, for the voice).
@@ -184,6 +197,8 @@ const ta = {
     top_none: () => ({ show: 'Yaarukkum baaki illa.', say: 'யாருக்கும் பாக்கி இல்லை.' }),
     collect_list: (p) => ({ show: `Indru vasool: ${p.list}.`, say: `இன்னைக்கு வசூல்: ${p.listSay}.` }),
     collect_none: () => ({ show: 'Indru vasool panna yaarum illa.', say: 'இன்னைக்கு வசூல் பண்ண யாரும் இல்லை.' }),
+    pay_qr: (p) => ({ show: `${p.name}, ${p.amt} roobaai. QR kaattren, scan pannunga.`, say: `${p.nameSay}, ${p.amtSay} ரூபாய். QR காட்டுறேன், ஸ்கேன் பண்ணுங்க.` }),
+    upi_missing: () => ({ show: 'UPI ID illa. Settings-la podunga.', say: 'UPI ஐடி இல்லை. செட்டிங்ஸ்ல போடுங்க.' }),
     today_summary: (p) => ({
       show: `Indru ${p.credit} kadan, ${p.payment} varavu. Mottham baaki ${p.total}.`,
       say: `இன்று ${p.creditSay} கடன், ${p.paymentSay} வரவு. மொத்தம் பாக்கி ${p.totalSay}.`,
@@ -259,6 +274,7 @@ const ta = {
     top: ['yaaru', 'yaar', 'yaarellam', 'adhigam', 'athigam', 'ellaarum', 'யாரு', 'யார்', 'அதிகம்'],
     today: ['indru', 'inniki', 'innaiku', 'innaikku', 'innikku', 'இன்று', 'இன்னைக்கு', 'இன்னிக்கு'],
     collect: ['vasool', 'vasul', 'vasoolu', 'vasula', 'vasoola', 'வசூல்', 'வசூலு'],
+    qr: ['qr', 'kyuaar', 'kiyuaar', 'scan', 'skaan', 'upi', 'gpay', 'phonepe', 'paytm', 'கியூஆர்', 'ஸ்கேன்'],
     undo: [
       'cancel', 'azhi', 'azhichidu', 'azhichudu', 'azhichiru', 'pottadha', 'pottadhu', 'pottatha', 'kadaisi',
       'thappa', 'கேன்சல்', 'அழி', 'அழிச்சிடு', 'போட்டதை', 'போட்டத',
@@ -284,7 +300,7 @@ const ta = {
       'panniru', 'ponga', 'vandhu', 'vanthu', 'ippo', 'konjam', 'saaman', 'saamaan', 'sollu',
       'sollunga', 'last', 'customer', 'kustamar', 'kaasu', 'panam', 'irukku', 'kudu', 'ku', 'nu', 'ella', 'vandhaar',
       'ennoda', 'avan', 'aval', 'avar', 'avanga', 'naalaiku', 'peru', 'per', 'pannanum', 'pannalaam', 'pannalam',
-      'aachu', 'aayiduchu', 'aagiduchu',
+      'aachu', 'aayiduchu', 'aagiduchu', 'kaattu', 'kaatu', 'kaattunga', 'kaatunga', 'code', 'காட்டு',
       'பண்ணு', 'வந்து', 'இப்போ', 'கொஞ்சம்', 'சாமான்', 'காசு', 'பணம்', 'கஸ்டமர்',
     ],
     items: [

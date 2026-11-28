@@ -14,15 +14,18 @@ export function waLink(customer, text) {
   return `https://wa.me/${phoneDigits(customer)}?text=${encodeURIComponent(text)}`;
 }
 
-/** A polite balance reminder in the customer's language. */
-export function reminderText(customer, balance, shopName, lang = 'ta') {
+/** A polite balance reminder in the customer's language, with a UPI pay link when there is one. */
+export function reminderText(customer, balance, shopName, lang = 'ta', { payUrl = null } = {}) {
   const name = nativeNameFor(customer.name_ta, lang) || label(customer);
   const date = new Date().toLocaleDateString(`${lang}-IN`, { day: 'numeric', month: 'long' });
-  return pack(lang).whatsapp({ name, shop: shopName, amount: fmt(balance), date });
+  const text = pack(lang).whatsapp({ name, shop: shopName, amount: fmt(balance), date });
+  return payUrl ? `${text}
+
+${t('pay_by_upi', lang)}: ${payUrl}` : text;
 }
 
-export function reminderLink(customer, balance, shopName, lang = 'ta') {
-  return waLink(customer, reminderText(customer, balance, shopName, lang));
+export function reminderLink(customer, balance, shopName, lang = 'ta', opts = {}) {
+  return waLink(customer, reminderText(customer, balance, shopName, lang, opts));
 }
 
 /** Month-end statement as WhatsApp text: opening, each entry with running balance, closing. */

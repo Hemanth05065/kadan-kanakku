@@ -10,6 +10,7 @@ import { chime } from './voiceClips.js';
 import { HandsFree } from './handsFree.js';
 import { handsFreeShouldAct } from './vad.js';
 import { analyse, encodeWav } from './audio.js';
+import { isVpa } from '../lib/upi.js';
 import { decide, afterCustomerAdded, fail, todayAnswer, collectAnswer, EMPTY_CONVO } from './decide.js';
 import { reply, PACKS } from '../i18n/index.js';
 import { LIMITS } from '../lib/config.js';
@@ -88,6 +89,7 @@ export function useVoiceFlow() {
       entries: s.entries,
       index: buildNameIndex(s.customers, s.aliases),
       replyLang: s.settings.replyLang,
+      upi: isVpa(s.settings.upiId),
       lastUndoable,
       justSaved: justSaved.current && Date.now() - justSaved.current.at < 10000 ? justSaved.current.id : null,
     };
@@ -190,6 +192,9 @@ export function useVoiceFlow() {
       case 'answer':
         await resolveReviews();
         setUi({ options: [] });
+        return say(action.reply, 'idle');
+      case 'show_pay':
+        setUi({ options: [], payFor: { customerId: action.customerId, amount: action.amount } });
         return say(action.reply, 'idle');
       case 'undo':
         await removeEntry(action.entryId);
@@ -439,6 +444,8 @@ export function useVoiceFlow() {
 
   const saveNow = useCallback(() => commitCountdown(), []); // eslint-disable-line react-hooks/exhaustive-deps
 
+  const closePay = useCallback(() => setUi({ payFor: null }), [setUi]);
+
   /** Manual form saved: attach the last voice clip, resolve review rows, learn the name. */
   const completeManual = useCallback(async (fields, prefill) => {
     const clip = prefill?.clipKey ? clips.current.get(prefill.clipKey) : null;
@@ -568,5 +575,6 @@ export function useVoiceFlow() {
     stopDemo,
     startHandsFree,
     stopHandsFree,
+    closePay,
   };
 }

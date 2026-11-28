@@ -4,6 +4,7 @@ import { useLedger, useStore, addCustomer, updateCustomer, removeCustomer } from
 import { rankCustomers } from '../lib/names.js';
 import { overdueCustomers } from '../lib/ledger.js';
 import { reminderLink } from '../lib/whatsapp.js';
+import { payRequest } from '../lib/upi.js';
 import { dayLabel } from '../lib/util.js';
 
 const HONORIFICS = ['', 'anna', 'akka', 'amma', 'thambi', 'sir', 'madam'];
@@ -67,7 +68,7 @@ export function CustomerSheet({ open, customer, onClose, onSaved }) {
 
 /** 30+ days unpaid: one tap per customer opens WhatsApp with the reminder and marks it sent. */
 function OverdueList({ list, go }) {
-  const { shop } = useStore();
+  const { shop, settings } = useStore();
   const { t, en, lang } = useT();
   const remindLang = lang;
   if (!list.length) return <Empty k="all_clear" />;
@@ -91,7 +92,7 @@ function OverdueList({ list, go }) {
                 )}
               </button>
               <a
-                href={reminderLink(c, c.balance, shop?.name || '', remindLang)}
+                href={reminderLink(c, c.balance, shop?.name || '', remindLang, { payUrl: payRequest(c, c.balance, settings, shop?.name || '')?.page })}
                 target="_blank"
                 rel="noopener noreferrer"
                 onClick={() => updateCustomer(c.id, { last_reminded_at: new Date().toISOString() })}

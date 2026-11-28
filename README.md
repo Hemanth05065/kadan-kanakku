@@ -32,6 +32,7 @@ Hold the big mic button (or switch on **hands-free** and just talk) the way you 
 | *(too far / too noisy)* | Konjam pakkathula vandhu pesunga. *(never guesses)* |
 | *(two failed tries)* | Puriyala. Screen-la type pannunga. → manual form, clip kept in **Needs review** |
 | Indru kanakku evlo? | Indru 3,340 kadan, 100 varavu. Mottham baaki 8,400. |
+| Murugan anna-ku QR kaattu | Murugan anna, 1,140 roobaai. QR kaattren, scan pannunga. → a UPI QR for exactly 1,140 fills the screen |
 | Ravi ka dedh sau udhaar *(Hindi)* | Ravi, 150 rupaye udhaar. Kul baaki … |
 | Ravi garu rendu vandala yabhai appu *(Telugu)* | Ravi garu, 250 rupayalu appu. Motham baaki … |
 
@@ -45,6 +46,7 @@ Every entry keeps its **transcript and voice clip** — tap ▶ to replay it whe
 
 - **Month-end statement** per customer: opening balance, every entry with running balance, closing balance. Save as PDF from the phone's print dialog (renders Tamil/Hindi/Telugu correctly) or send as WhatsApp text.
 - **Collect today** on the home screen: who to ask for money, most urgent first, with the reason in plain words ("no payment for 20 days · took ₹200 more on credit this week") and a one-tap WhatsApp reminder each. It weighs how much is owed by how long it has waited, leaves alone anyone who paid this week or was reminded today or yesterday, and skips tiny balances. 🔊 reads it out, and you can ask by voice: *"Indru yaar kitta vasool pannanum?"*. "Selvi akka kitta 500 vasool aachu" records the money collected.
+- **UPI payments**: add the shop's UPI ID once (Settings). Every customer page then has a QR for the exact balance to scan at the counter (or say *"Murugan anna-ku QR kaattu"*). Every WhatsApp reminder and statement ends with a pay link: a small page that opens GPay / PhonePe / Paytm / BHIM with the shop's UPI ID and the amount filled in. The page needs no account and stores nothing: everything it shows is in the link. Money goes straight from the customer's bank to the shop's; the app never touches it.
 - **30+ days unpaid** list with one-tap WhatsApp reminders in the customer's language; the app remembers who was reminded when.
 - **Staff accounts**: the owner shares a 6-digit code, staff sign in with their own phone. Staff can add entries but not hard-delete; every entry records who made it.
 - **Today's summary** by voice or button at closing time.
@@ -175,7 +177,7 @@ docs/              PITCH.md (2-minute demo), architecture.svg
 npm test
 ```
 
-230+ tests, no network or Docker needed:
+250+ tests, no network or Docker needed:
 
 - number parsing in Tamil, English, Hindi and Telugu (Latin and native scripts), transliteration, sound matching
 - every spoken reply in the brief, asserted word for word, and the clarification / alias / new-customer / large-amount / undo / two-failure flows
@@ -183,6 +185,7 @@ npm test
 - the shop voice: Tamil number words up to 10 lakh, every reply stitched from clips (with and without recorded names), clip clean-up (trim, level, fades; refusing silence, whispers and distortion) and phone-voice choice (never a British voice for Tamil)
 - hands-free: cutting a microphone stream into sentences (pauses inside a sentence, coughs, 15 s cut-off), staying deaf while the app speaks, and which overheard phrases it acts on
 - who to collect from: ranking, the reasons shown, who is left alone, and the spoken question in four languages
+- UPI: the upi://pay link, UPI ID checks, the pay-page link (Tamil names, tampered links), pay links in reminders, and "show the QR" by voice in four languages
 - the offline outbox and sync (IndexedDB faked, Supabase client faked)
 - **the real database migration on PostgreSQL 18** (PGlite, in-process): shop isolation under row-level security, computed balances, staff invites, owner-only hard deletes, private audio storage
 
@@ -190,7 +193,7 @@ npm test
 npm run eval:nlu
 ```
 
-Scores understanding on [eval/cases.json](eval/cases.json): 71 counter phrases across Tamil (Latin and Tamil script, Chennai/Madurai/Coimbatore phrasing), English, Hindi and Telugu. Current result for the on-device grammar: **100% with intent, customer and amount all right, and 0 "silent wrong saves"** (wrong entries confident enough to save without asking — the number that must stay at zero). Add `--llm` with `LLM_BASE_URL`/`LLM_MODEL` set to score your open LLM and the LLM ⊕ grammar merge with the exact server prompt. Honest caveat: these phrases were written by us; real accuracy comes from real voices:
+Scores understanding on [eval/cases.json](eval/cases.json): 74 counter phrases across Tamil (Latin and Tamil script, Chennai/Madurai/Coimbatore phrasing), English, Hindi and Telugu. Current result for the on-device grammar: **100% with intent, customer and amount all right, and 0 "silent wrong saves"** (wrong entries confident enough to save without asking — the number that must stay at zero). Add `--llm` with `LLM_BASE_URL`/`LLM_MODEL` set to score your open LLM and the LLM ⊕ grammar merge with the exact server prompt. Honest caveat: these phrases were written by us; real accuracy comes from real voices:
 
 ```powershell
 npm run eval:stt -- kadan-eval.json --engine local:onnx-community/whisper-base
@@ -219,6 +222,7 @@ Hindi ([hi.js](src/i18n/hi.js)) and Telugu ([te.js](src/i18n/te.js)) were added 
 | On-device Whisper | ✅ verified in the browser: 11 s clip transcribed in 2.1 s |
 | Tamil-trained on-device models | Swanada: ✅ downloads (27 MB), loads offline from cache and transcribes in the browser (4.5 s of audio in 0.3 s); Tamil accuracy still to measure on real voices in the Accuracy lab. Tamil Whisper medium: listed, uses the same tested Whisper path, not downloaded here (776 MB) |
 | Collect today | ✅ unit-tested; card, reasons, WhatsApp link and the spoken question checked in the browser |
+| UPI payments | ✅ unit-tested; in the browser: UPI ID saved, "Murugan anna-ku QR kaattu" opened the QR for ₹900, the customer page, statement and reminders carry the QR / pay link, and the pay link opens the standalone pay page with the right upi:// link; still to scan with a real UPI app |
 | Hands-free listening | ✅ unit-tested; in the browser, with recorded speech played into the page as the microphone: Silero loaded, a sentence was heard, transcribed on the device and saved, chatter and a stray "No." were ignored, "No." mid-question and right after the save chime were acted on; still to try with a real mic in a real shop |
 | Shop voice (recorded human voice) | ✅ stitching, Tamil numbers, clip clean-up and fallbacks unit-tested; save → stitch → play and file export/import verified in the browser with generated test audio; still to record a real voice on a real phone mic |
 

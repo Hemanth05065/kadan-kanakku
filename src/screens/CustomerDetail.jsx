@@ -7,6 +7,8 @@ import { historyWithRunningBalance } from '../lib/ledger.js';
 import { reminderLink } from '../lib/whatsapp.js';
 import { PACKS } from '../i18n/index.js';
 import { NameVoiceRow } from '../components/VoiceClip.jsx';
+import { PaySheet } from '../components/Pay.jsx';
+import { payRequest } from '../lib/upi.js';
 
 export default function CustomerDetail({ id, go }) {
   const s = useStore();
@@ -14,6 +16,7 @@ export default function CustomerDetail({ id, go }) {
   const { t, en, lang: uiLang } = useT();
   const [editCustomer, setEditCustomer] = useState(false);
   const [editor, setEditor] = useState(null); // { initial, entry? }
+  const [showPay, setShowPay] = useState(false);
 
   const c = L.customerById.get(id);
   const history = useMemo(() => historyWithRunningBalance(s.entries, id), [s.entries, id]);
@@ -61,7 +64,7 @@ export default function CustomerDetail({ id, go }) {
           {[uiLang === 'en' ? 'ta' : uiLang, 'en'].map((lang) => (
             <a
               key={lang}
-              href={reminderLink(c, balance, s.shop?.name || 'our shop', lang)}
+              href={reminderLink(c, balance, s.shop?.name || 'our shop', lang, { payUrl: payRequest(c, balance, s.settings, s.shop?.name || '')?.page })}
               target="_blank"
               rel="noopener noreferrer"
               onClick={() => updateCustomer(c.id, { last_reminded_at: new Date().toISOString() })}
@@ -74,6 +77,12 @@ export default function CustomerDetail({ id, go }) {
             </a>
           ))}
         </div>
+      )}
+
+      {balance > 0 && (
+        <Button variant="secondary" className="w-full" onClick={() => setShowPay(true)}>
+          📱 {t('show_qr')} · {t('scan_to_pay')} <Money value={balance} />
+        </Button>
       )}
 
       <NameVoiceRow customer={c} />
@@ -101,6 +110,7 @@ export default function CustomerDetail({ id, go }) {
         )}
       </section>
 
+      {showPay && <PaySheet customer={c} amount={balance} onClose={() => setShowPay(false)} go={go} />}
       {editCustomer && <CustomerSheet open customer={c} onClose={() => setEditCustomer(false)} />}
       {editor && (
         <EntryEditor
